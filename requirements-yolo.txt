@@ -1,0 +1,4 @@
+# Optional neural detector path. Only needed when SKUNK_DETECTOR=yolo.
+# Pulls in torch (~2 GB). One-time download; inference itself is fully local.
+-r requirements.txt
+ultralytics==8.3.55

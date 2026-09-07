@@ -1,0 +1,280 @@
+/* ============================================================
+   RESPONSIVE — tablet, phone, and touch
+
+   The desktop layouts live with their screens (operator.css,
+   setup.css). This file only carries the overrides that adapt
+   them, so "how does this look on a phone?" is one file, not a
+   hunt through four.
+
+   Breakpoints, and why each exists:
+     1100px  the operator side panel no longer fits beside video
+      900px  --compact-- the panel becomes tabbed (mirrors
+             BREAKPOINTS.compact in hooks/useMediaQuery.ts)
+      600px  phone: single column, larger controls
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   New components
+   ------------------------------------------------------------ */
+
+/* ---- error boundary fallback ---- */
+
+.boundary {
+  border: 1px solid var(--threat);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  padding: var(--pad-card);
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+}
+
+.boundary-title {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--threat);
+}
+
+.boundary-detail {
+  font-size: var(--fs-body);
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* ---- side panel tabs (compact layout only) ---- */
+
+.panel-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  padding: 2px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.panel-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  /* 44px: the minimum comfortable touch target. */
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.panel-tab:hover {
+  color: var(--text);
+}
+
+.panel-tab.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.panel-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.tab-count {
+  font-size: var(--fs-micro);
+  color: var(--text-faint);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 0.35rem;
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------------
+   Tablet — the side panel drops below the video
+   ------------------------------------------------------------ */
+
+@media (max-width: 1100px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow-y: auto;
+  }
+
+  /* The video no longer competes with the panel for height, so give it a
+     floor: a 20vh sliver of footage is useless to an operator. */
+  .stage {
+    min-height: 55vh;
+  }
+
+  .panel {
+    /* Readouts sit side by side rather than in one tall column. The desktop
+       rule scrolls this column independently; here the page scrolls instead. */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--gap);
+    align-content: start;
+    overflow-y: visible;
+  }
+
+  /* `.log` is given `flex: 1 1 auto` for the desktop column; in a grid that
+     does nothing, so let it span the full width where it reads best. */
+  .panel > .card.log,
+  .controls {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---- setup screen: two columns become one ---- */
+
+@media (max-width: 1000px) {
+  .setup-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------
+   Compact — tabbed panel
+   ------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .panel {
+    /* Tabs show one section at a time, so the multi-column arrangement
+       above would leave a half-empty row. */
+    display: flex;
+    flex-direction: column;
+    overflow-y: visible;
+  }
+
+  /* The log stretches to fill the desktop column; behind a tab it should
+     size to its content instead. */
+  .panel > .card.log {
+    flex: none;
+  }
+
+  .stage {
+    min-height: 48vh;
+  }
+}
+
+/* ------------------------------------------------------------
+   Phone
+   ------------------------------------------------------------ */
+
+@media (max-width: 600px) {
+  body {
+    /* The console scrolls as one document on a phone; locking the body
+       would trap the panel content off-screen. */
+    overflow: auto;
+  }
+
+  .shell {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .main {
+    padding: 0.75rem;
+    gap: 0.75rem;
+    /* Rows size to content so the page scrolls naturally. */
+    grid-template-rows: auto auto;
+    overflow: visible;
+  }
+
+  .stage {
+    min-height: 0;
+  }
+
+  /* The top bar is the first thing squeezed. Keep the wordmark and the
+     link state; drop what is decorative. */
+  .topbar {
+    gap: 0.6rem;
+    padding: 0.7rem 0.75rem;
+  }
+
+  .canister,
+  .link-state {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 0.75rem;
+  }
+
+  /* Banner: stack the authorize control under the state text rather than
+     letting both shrink to unreadable. */
+  .banner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.75rem 0.85rem;
+  }
+
+  /* Two half-width buttons are too narrow to label at this size. */
+  .controls {
+    flex-direction: column;
+  }
+
+  .setup-body {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+
+  .dropzone {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   Touch — coarse pointers need bigger targets than a mouse
+
+   Keyed on the pointer, not the width: a large touchscreen still
+   needs 44px targets, and a small desktop window does not.
+   ------------------------------------------------------------ */
+
+@media (pointer: coarse) {
+  button,
+  .ghost-button,
+  .link-button,
+  .begin-button,
+  .video-pick,
+  .video-remove,
+  .detector-card {
+    min-height: 44px;
+  }
+
+  /* Sliders are the hardest control to hit accurately with a thumb. */
+  input[type="range"] {
+    height: 44px;
+  }
+
+  /* Delete sits next to select in the library list; at thumb size the two
+     need real separation, not a hairline. */
+  .video-remove {
+    min-width: 44px;
+  }
+}
+
+/* ------------------------------------------------------------
+   Short viewports — a laptop in landscape has little height
+   ------------------------------------------------------------ */
+
+@media (max-height: 560px) and (min-width: 900px) {
+  .panel {
+    overflow-y: auto;
+  }
+}

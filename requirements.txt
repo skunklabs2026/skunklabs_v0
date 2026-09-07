@@ -1,0 +1,13 @@
+# SkunkLabs MVP V0 — backend runtime dependencies.
+#
+# Core (required). The demo runs end-to-end with only these installed,
+# using the motion detector. No internet needed at runtime.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+opencv-python==4.10.0.84
+numpy==2.1.3
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# Optional (YOLO detector). Large download (~2 GB, one-time, online).
+# Install with:  pip install -r requirements-yolo.txt

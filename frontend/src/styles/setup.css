@@ -1,0 +1,365 @@
+/* ============================================================
+   MISSION SETUP — the landing screen
+   ============================================================ */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  /* The page itself never scrolls sideways. Any overflow is handled by the
+     individual panels, which is what stopped the left column being clipped. */
+  overflow-x: hidden;
+}
+
+.setup-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 2rem);
+  padding: clamp(1rem, 2.5vw, 2rem);
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+/* Layout below 1000px lives in responsive.css. */
+
+.setup-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  /* Both of these are required for a grid child to be allowed to shrink. */
+  min-width: 0;
+  min-height: 0;
+}
+
+.setup-step {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.setup-step:not(:first-child) {
+  margin-top: 0.5rem;
+}
+
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: 0.55rem;
+  color: var(--accent);
+  flex: none;
+}
+
+/* ---------------- dropzone ---------------- */
+
+.dropzone {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  cursor: pointer;
+  text-align: center;
+  transition: all 160ms ease;
+  min-width: 0;
+}
+
+.dropzone:hover,
+.dropzone.is-dragging {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.dropzone-title {
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.dropzone-sub {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.dropzone-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  color: var(--accent);
+}
+
+/* ---------------- library ---------------- */
+
+.setup-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.video-list {
+  display: grid;
+  gap: 0.3rem;
+  /* Rows keep their natural height rather than stretching to fill. */
+  align-content: start;
+  min-width: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.video-item {
+  position: relative;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  transition: border-color 140ms ease;
+  min-width: 0;
+}
+
+.video-item:hover {
+  border-color: var(--accent);
+}
+
+.video-item.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.video-pick {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0.4rem 1.6rem 0.4rem 0.55rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.video-name,
+.video-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-name {
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  color: var(--text);
+}
+
+.video-meta {
+  font-family: var(--font-label);
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.video-remove {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  background: none;
+  border: 0;
+  color: var(--text-faint);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+
+.video-remove:hover {
+  color: var(--threat);
+}
+
+/* ---------------- detector choice ---------------- */
+
+.detector-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.detector-card {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  cursor: pointer;
+  transition: all 150ms ease;
+  min-width: 0;
+}
+
+.detector-card:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.detector-card.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.detector-name {
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.detector-card.is-on .detector-name {
+  color: var(--accent);
+}
+
+.detector-blurb {
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+/* ---------------- threshold ---------------- */
+
+.threshold {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  min-width: 0;
+}
+
+.threshold-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.threshold input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+/* ---------------- preview + verification ---------------- */
+
+.preview {
+  position: relative;
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  /* Height is bounded so a tall clip cannot push BEGIN MISSION off screen. */
+  max-height: 42vh;
+}
+
+.preview-feed {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* The frame box is set to the source aspect ratio, so `fill` matches the
+     image exactly and leaves no letterbox bars. */
+  object-fit: fill;
+}
+
+.preview-frame {
+  position: relative;
+  width: 100%;
+  max-height: 42vh;
+  max-width: 100%;
+}
+
+.preview-empty {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 3rem 1rem;
+}
+
+.verify {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  min-width: 0;
+}
+
+.begin-button {
+  margin-top: auto;
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  padding: 0.9rem 1.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #0a0a0b;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.begin-button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.begin-button:disabled {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: not-allowed;
+}

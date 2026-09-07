@@ -1,0 +1,286 @@
+/* ============================================================
+   BASE — reset, shell, and the primitives shared by both screens
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ---------------- top bar ---------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem clamp(1rem, 2.5vw, 1.75rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-raise);
+  flex: none;
+}
+
+.wordmark {
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.canister {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  color: var(--text-faint);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex: none;
+}
+
+/* ---------------- cards ---------------- */
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  padding: var(--pad-card);
+  min-width: 0;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.75rem;
+}
+
+.tag {
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text-faint);
+  margin-left: 0.4rem;
+  white-space: nowrap;
+}
+
+/* ---------------- readouts ----------------
+   Label left, value right. `min-width: 0` on both columns is what stops a
+   long filename forcing the whole panel wider than its container — the
+   default `min-width: auto` on a grid item refuses to shrink below its
+   content, which is what broke the setup layout. */
+
+.readout {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.readout-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.readout-label {
+  font-family: var(--font-label);
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.readout-value {
+  font-family: var(--font-label);
+  font-size: var(--fs-value);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readout-value.is-muted {
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+/* ---------------- status dots ---------------- */
+
+.dot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--idle);
+  flex: none;
+}
+
+.dot.is-ok {
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+.dot.is-bad {
+  background: var(--threat);
+  box-shadow: 0 0 6px var(--threat);
+}
+
+/* ---------------- buttons ---------------- */
+
+.ghost-button {
+  flex: 1;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.ghost-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ghost-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color 140ms ease;
+  white-space: nowrap;
+}
+
+.link-button:hover {
+  color: var(--accent);
+}
+
+/* ---------------- misc primitives ---------------- */
+
+.meter {
+  height: 3px;
+  background: var(--line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+
+.meter-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+
+.note {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.note.is-ok {
+  color: var(--ok);
+}
+.note.is-bad {
+  color: var(--threat);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chip {
+  font-family: var(--font-label);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.chip b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Thin scrollbars everywhere we allow scrolling. */
+.scroll-y {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}

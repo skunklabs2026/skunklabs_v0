@@ -1,0 +1,33 @@
+# Model weights — downloaded on first use, not committed.
+*.pt
+
+# Python
+*.pyc
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+*.egg-info/
+build/
+
+# Local configuration / secrets
+.env
+.env.local
+.env.*.local
+
+# Generated demo footage
+assets/videos/*.mp4
+assets/videos/uploads/
+
+# Frontend
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Coverage
+.coverage
+htmlcov/
+
+# OS
+.DS_Store

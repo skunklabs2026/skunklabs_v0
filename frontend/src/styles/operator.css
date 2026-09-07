@@ -1,0 +1,424 @@
+/* ============================================================
+   OPERATOR CONSOLE — the live mission screen
+   ============================================================ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--gap);
+  padding: var(--gap) clamp(1rem, 2.5vw, 1.75rem) clamp(1rem, 2.5vw, 1.5rem);
+  min-height: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Layout below 1100px lives in responsive.css. */
+
+.stage {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--gap);
+  min-height: 0;
+  min-width: 0;
+}
+
+/* ---------------- video ---------------- */
+
+.viewport {
+  position: relative;
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Locked to the source aspect ratio so image and overlay share one
+   coordinate space and no letterbox bars appear. */
+.frame {
+  position: relative;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.feed {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+/* Explicit width/height matter: the overlay <svg> has a "0 0 1 1" viewBox,
+   so its intrinsic ratio is 1:1 and `inset: 0` alone would size it square,
+   putting every box in the wrong place. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.viewport-offline {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 0.5rem;
+  justify-items: center;
+  background: rgba(10, 10, 11, 0.9);
+  font-family: var(--font-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  font-size: var(--fs-micro);
+  color: var(--threat);
+}
+
+/* corner registration marks — reads as an instrument, not a web player */
+.corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line);
+  pointer-events: none;
+}
+.corner.tl {
+  top: 9px;
+  left: 9px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.corner.tr {
+  top: 9px;
+  right: 9px;
+  border-left: 0;
+  border-bottom: 0;
+}
+.corner.bl {
+  bottom: 9px;
+  left: 9px;
+  border-right: 0;
+  border-top: 0;
+}
+.corner.br {
+  bottom: 9px;
+  right: 9px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.feed-meta {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  font-family: var(--font-label);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* ---------------- state banner ---------------- */
+
+.banner {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--state-color, var(--idle));
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  padding: 0.8rem 1.1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: calc(var(--progress, 0) * 100%);
+  background: var(--state-color, var(--idle));
+  opacity: 0.55;
+  transition: width 160ms linear;
+}
+
+.banner-state {
+  font-family: var(--font-label);
+  font-size: clamp(1.2rem, 2.3vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--state-color, var(--text));
+  line-height: 1.15;
+  transition: color 240ms ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner-detail {
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.banner.is-urgent .banner-state {
+  animation: pulse 1.15s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ---------------- authorize ---------------- */
+
+.authorize {
+  font-family: var(--font-label);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.9rem 2.2rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: not-allowed;
+  transition: all 180ms ease;
+  white-space: nowrap;
+}
+
+.authorize.is-armed {
+  border-color: var(--threat);
+  background: var(--threat);
+  color: #0a0a0b;
+  cursor: pointer;
+  animation: arm 1.5s ease-in-out infinite;
+}
+
+.authorize.is-armed:hover {
+  filter: brightness(1.12);
+}
+.authorize.is-armed:active {
+  transform: translateY(1px);
+}
+
+@keyframes arm {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 86, 47, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(224, 86, 47, 0);
+  }
+}
+
+/* ---------------- side panel ---------------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  padding-right: 2px;
+}
+
+.panel > .card {
+  flex: none;
+}
+
+.panel > .card.log {
+  flex: 1 1 auto;
+  min-height: 130px;
+}
+
+/* target designation — the number the operator actually reads */
+.target-id {
+  font-family: var(--font-label);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.target-id.is-empty {
+  color: var(--text-faint);
+  font-size: 1.1rem;
+}
+
+.platform-line {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 0.35rem;
+}
+
+/* ---------------- event log ---------------- */
+
+.log {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.log-scroll {
+  overflow-y: auto;
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line-soft);
+  overflow-wrap: anywhere;
+}
+
+.log-time {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.log-entry.kind-state {
+  color: var(--text);
+}
+.log-entry.kind-authorization {
+  color: var(--armed);
+}
+.log-entry.kind-actuation {
+  color: var(--threat);
+}
+.log-entry.kind-warning {
+  color: var(--armed);
+}
+.log-entry.kind-error {
+  color: var(--threat);
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  flex: none;
+}
+
+/* ---------------- launch cue ---------------- */
+
+.launch-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 62%,
+    rgba(224, 127, 52, 0.5),
+    rgba(224, 86, 47, 0.1) 38%,
+    transparent 68%
+  );
+  animation: launch 1600ms ease-out forwards;
+}
+
+@keyframes launch {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.launch-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-label);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-shadow: 0 0 18px rgba(224, 86, 47, 0.9);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: launch-text 1600ms ease-out forwards;
+}
+
+@keyframes launch-text {
+  0% {
+    opacity: 0;
+    letter-spacing: 0.1em;
+  }
+  22% {
+    opacity: 1;
+    letter-spacing: 0.28em;
+  }
+  100% {
+    opacity: 0;
+    letter-spacing: 0.45em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner.is-urgent .banner-state,
+  .authorize.is-armed,
+  .launch-flash,
+  .launch-label {
+    animation: none;
+  }
+}
