@@ -7,7 +7,6 @@
 SHELL   := /bin/bash
 VENV    := .venv
 PYTHON  := $(VENV)/bin/python
-PIP     := $(VENV)/bin/pip
 FRONTEND := frontend
 
 .DEFAULT_GOAL := help
@@ -24,18 +23,17 @@ setup: setup-backend setup-frontend ## Install everything (first-run command)
 	@echo "Ready. Run: make demo"
 
 setup-backend: ## Create the venv and install backend + dev dependencies
-	@test -d $(VENV) || python3 -m venv $(VENV)
-	$(PIP) install --quiet --upgrade pip
-	$(PIP) install --quiet -e ".[dev]"
+	uv venv $(VENV) --python 3.11
+	uv pip install -e ".[dev]"
 
 setup-frontend: ## Install frontend dependencies
 	cd $(FRONTEND) && npm install
 
 setup-hooks: ## Install pre-commit hooks (runs checks on every commit)
-	$(VENV)/bin/pre-commit install
+	uvx pre-commit install
 
 setup-yolo: ## Add the optional neural detector (~2 GB download)
-	$(PIP) install -e ".[yolo]"
+	uv pip install -e ".[yolo]"
 
 # ---------------------------------------------------------------- running
 
@@ -43,7 +41,7 @@ demo: ## Start backend + UI together and open the console
 	./run_demo.sh
 
 dev-backend: ## Backend only, with autoreload
-	$(VENV)/bin/uvicorn backend.main:app --reload --port 8000
+	uv run uvicorn backend.main:app --reload --port 8000
 
 dev-frontend: ## Frontend dev server only
 	cd $(FRONTEND) && npm run dev
@@ -51,30 +49,30 @@ dev-frontend: ## Frontend dev server only
 # ---------------------------------------------------------------- quality
 
 test: ## Run both backend and frontend test suites
-	$(PYTHON) -m pytest
+	uv run pytest
 	cd $(FRONTEND) && npm run test
 
 test-backend: ## Run the backend test suite only
-	$(PYTHON) -m pytest
+	uv run pytest
 
 test-frontend: ## Run the frontend test suite only
 	cd $(FRONTEND) && npm run test
 
 test-cov: ## Run all tests with coverage reports
-	$(PYTHON) -m pytest --cov=backend --cov-report=term-missing
+	uv run pytest --cov=backend --cov-report=term-missing
 	cd $(FRONTEND) && npm run test:cov
 
 test-frontend-watch: ## Run frontend tests in watch mode
 	cd $(FRONTEND) && npm run test:watch
 
 lint: ## Check Python and TypeScript
-	$(VENV)/bin/ruff check backend tests scripts
-	$(VENV)/bin/ruff format --check backend tests scripts
+	uvx ruff check backend tests scripts
+	uvx ruff format --check backend tests scripts
 	cd $(FRONTEND) && npm run lint
 
 format: ## Auto-fix formatting and safe lint errors
-	$(VENV)/bin/ruff check --fix backend tests scripts
-	$(VENV)/bin/ruff format backend tests scripts
+	uvx ruff check --fix backend tests scripts
+	uvx ruff format backend tests scripts
 	cd $(FRONTEND) && npm run format
 
 fmt-frontend: ## Auto-fix frontend formatting only
@@ -98,7 +96,7 @@ build: ## Production frontend build, served by the backend at :8000
 	@echo "Built. Run 'make dev-backend' and open http://127.0.0.1:8000"
 
 verify: ## Drive the pipeline headlessly through the full mission sequence
-	$(PYTHON) scripts/verify_pipeline.py
+	uv run python scripts/verify_pipeline.py
 
 clean: ## Remove caches and build output
 	find . -path ./$(VENV) -prune -o -name __pycache__ -type d -print0 | xargs -0 rm -rf
