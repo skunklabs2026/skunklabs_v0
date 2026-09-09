@@ -47,11 +47,22 @@ dev-frontend: ## Frontend dev server only
 
 # ---------------------------------------------------------------- quality
 
-test: ## Run the backend test suite
+test: ## Run both backend and frontend test suites
+	$(PYTHON) -m pytest
+	cd $(FRONTEND) && npm run test
+
+test-backend: ## Run the backend test suite only
 	$(PYTHON) -m pytest
 
-test-cov: ## Run tests with a coverage report
+test-frontend: ## Run the frontend test suite only
+	cd $(FRONTEND) && npm run test
+
+test-cov: ## Run all tests with coverage reports
 	$(PYTHON) -m pytest --cov=backend --cov-report=term-missing
+	cd $(FRONTEND) && npm run test:cov
+
+test-frontend-watch: ## Run frontend tests in watch mode
+	cd $(FRONTEND) && npm run test:watch
 
 lint: ## Check Python and TypeScript
 	$(VENV)/bin/ruff check backend tests scripts
@@ -66,7 +77,7 @@ format: ## Auto-fix formatting and safe lint errors
 typecheck: ## Type-check the frontend
 	cd $(FRONTEND) && npm run typecheck
 
-check: lint typecheck test ## Everything CI runs — do this before a PR
+check: lint typecheck test-backend test-frontend ## Everything CI runs — do this before a PR
 
 # ---------------------------------------------------------------- build
 

@@ -489,6 +489,29 @@ them at any window size without knowing the source resolution.
 
 ## Tests
 
+### Testing Frameworks
+
+| Framework | Layer | Purpose | Manual Run Command |
+|---|---|---|---|
+| **pytest** | Backend (Python) | Unit and integration testing for Python code. Tests state machine transitions, API endpoints, vision pipeline, tracking logic, and end-to-end flows. | `make test-backend` or `.venv/bin/python -m pytest` |
+| **pytest-cov** | Backend (Python) | Code coverage reporting for pytest. Generates coverage reports showing which lines of code are exercised by tests. | `make test-cov` (includes both backend and frontend) |
+| **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. Native ESM support with Jest-compatible API. Runs component and utility tests. | `make test-frontend` or `cd frontend && npm run test` |
+| **React Testing Library** | Frontend (TypeScript) | Testing utilities for React components. Encourages testing components as users interact with them rather than implementation details. | Used via Vitest: `cd frontend && npm run test` |
+| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. | `cd frontend && npm run test:cov` |
+| **rhiza** | Backend (Python) | Template-driven testing infrastructure from [Jebel-Quant/rhiza](https://github.com/Jebel-Quant/rhiza). Provides standardized pytest configuration, pre-commit hooks, and CI/CD workflows. | Configured via `.rhiza/template.yml` |
+
+### Running Tests
+
+```bash
+make test              # Run both backend and frontend tests
+make test-backend      # Backend only (pytest)
+make test-frontend     # Frontend only (Vitest)
+make test-cov          # Both with coverage reports
+make test-frontend-watch  # Frontend in watch mode (for development)
+```
+
+### Backend Tests
+
 ```bash
 .venv/bin/python -m pytest tests/ -q
 ```
@@ -501,6 +524,15 @@ confidence, airframe classification (including against the real demo clips),
 speed inference, fast-target track continuity, intercept feasibility, interceptor flight phases, upload path
 traversal safety, and a full end-to-end run over the real clip through the
 HTTP API and WebSocket — including uploading a clip and switching to it.
+
+### Frontend Tests
+
+```bash
+cd frontend && npm run test
+```
+
+Component tests using Vitest + React Testing Library covering UI primitives
+and component behavior.
 
 Vision *accuracy* is deliberately not unit-tested; for that, run the headless
 pipeline check against real footage:
