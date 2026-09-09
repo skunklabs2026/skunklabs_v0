@@ -40,7 +40,7 @@ demo: ## Start backend + UI together and open the console
 	./run_demo.sh
 
 dev-backend: ## Backend only, with autoreload
-	uv run uvicorn backend.main:app --reload --port 8000
+	$(VENV)/bin/uvicorn backend.main:app --reload --port 8000
 
 dev-frontend: ## Frontend dev server only
 	cd $(FRONTEND) && npm run dev
@@ -48,17 +48,17 @@ dev-frontend: ## Frontend dev server only
 # ---------------------------------------------------------------- quality
 
 test: ## Run both backend and frontend test suites
-	uv run pytest
+	$(VENV)/bin/pytest
 	cd $(FRONTEND) && npm run test
 
 test-backend: ## Run the backend test suite only
-	uv run pytest
+	$(VENV)/bin/pytest
 
 test-frontend: ## Run the frontend test suite only
 	cd $(FRONTEND) && npm run test
 
 test-cov: ## Run all tests with coverage reports
-	uv run pytest --cov=backend --cov-report=term-missing
+	$(VENV)/bin/pytest --cov=backend --cov-report=term-missing
 	cd $(FRONTEND) && npm run test:cov
 
 test-frontend-watch: ## Run frontend tests in watch mode
@@ -95,7 +95,7 @@ build: ## Production frontend build, served by the backend at :8000
 	@echo "Built. Run 'make dev-backend' and open http://127.0.0.1:8000"
 
 verify: ## Drive the pipeline headlessly through the full mission sequence
-	uv run python scripts/verify_pipeline.py
+	$(VENV)/bin/python scripts/verify_pipeline.py
 
 clean: ## Remove caches and build output
 	find . -path ./$(VENV) -prune -o -name __pycache__ -type d -print0 | xargs -0 rm -rf

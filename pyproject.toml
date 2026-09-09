@@ -98,6 +98,12 @@ ignore = [
     # the geometry code, and the slices are equal-length by construction.
     "RUF007",
     "B905",
+    # Unused unpacked variables are intentional in tuple unpacking patterns.
+    "RUF059",
+    # Unnecessary int() calls in round() are kept for explicit type clarity.
+    "RUF046",
+    # str+Enum pattern is used for JSON serialization compatibility.
+    "UP042",
 ]
 
 [tool.ruff.lint.per-file-ignores]
