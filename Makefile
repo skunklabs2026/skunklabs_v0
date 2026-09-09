@@ -11,8 +11,8 @@ PIP     := $(VENV)/bin/pip
 FRONTEND := frontend
 
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-backend setup-frontend setup-yolo demo dev-backend dev-frontend \
-        test test-cov lint format typecheck check build clean
+.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo demo dev-backend dev-frontend \
+        test test-cov lint format fmt-frontend typecheck typecheck-frontend depcheck check build clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -30,6 +30,9 @@ setup-backend: ## Create the venv and install backend + dev dependencies
 
 setup-frontend: ## Install frontend dependencies
 	cd $(FRONTEND) && npm install
+
+setup-hooks: ## Install pre-commit hooks (runs checks on every commit)
+	$(VENV)/bin/pre-commit install
 
 setup-yolo: ## Add the optional neural detector (~2 GB download)
 	$(PIP) install -e ".[yolo]"
@@ -74,8 +77,17 @@ format: ## Auto-fix formatting and safe lint errors
 	$(VENV)/bin/ruff format backend tests scripts
 	cd $(FRONTEND) && npm run format
 
+fmt-frontend: ## Auto-fix frontend formatting only
+	cd $(FRONTEND) && npm run format
+
 typecheck: ## Type-check the frontend
 	cd $(FRONTEND) && npm run typecheck
+
+typecheck-frontend: ## Type-check the frontend (alias)
+	cd $(FRONTEND) && npm run typecheck
+
+depcheck: ## Check for unused/missing dependencies (frontend)
+	cd $(FRONTEND) && npm run depcheck
 
 check: lint typecheck test-backend test-frontend ## Everything CI runs — do this before a PR
 

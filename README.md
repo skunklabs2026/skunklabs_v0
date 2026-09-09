@@ -494,10 +494,10 @@ them at any window size without knowing the source resolution.
 | Framework | Layer | Purpose | Manual Run Command |
 |---|---|---|---|
 | **pytest** | Backend (Python) | Unit and integration testing for Python code. Tests state machine transitions, API endpoints, vision pipeline, tracking logic, and end-to-end flows. | `make test-backend` or `.venv/bin/python -m pytest` |
-| **pytest-cov** | Backend (Python) | Code coverage reporting for pytest. Generates coverage reports showing which lines of code are exercised by tests. | `make test-cov` (includes both backend and frontend) |
+| **pytest-cov** | Backend (Python) | Code coverage reporting for pytest. Enforces 90% minimum coverage. | `make test-cov` (includes both backend and frontend) |
 | **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. Native ESM support with Jest-compatible API. Runs component and utility tests. | `make test-frontend` or `cd frontend && npm run test` |
 | **React Testing Library** | Frontend (TypeScript) | Testing utilities for React components. Encourages testing components as users interact with them rather than implementation details. | Used via Vitest: `cd frontend && npm run test` |
-| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. | `cd frontend && npm run test:cov` |
+| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. Enforces 90% minimum coverage. | `cd frontend && npm run test:cov` |
 | **rhiza** | Backend (Python) | Template-driven testing infrastructure from [Jebel-Quant/rhiza](https://github.com/Jebel-Quant/rhiza). Provides standardized pytest configuration, pre-commit hooks, and CI/CD workflows. | Configured via `.rhiza/template.yml` |
 
 ### Running Tests
@@ -509,6 +509,33 @@ make test-frontend     # Frontend only (Vitest)
 make test-cov          # Both with coverage reports
 make test-frontend-watch  # Frontend in watch mode (for development)
 ```
+
+**Coverage requirement:** Both backend and frontend enforce a minimum 90% code
+coverage. The coverage check will fail if coverage drops below this threshold.
+
+### Pre-commit Hooks
+
+To run checks automatically on every `git commit`, install pre-commit hooks:
+
+```bash
+make setup-hooks
+```
+
+This installs hooks that run linting, type checking, and tests before each
+commit. Commits will be blocked if any check fails.
+
+### Continuous Integration
+
+GitHub Actions runs all checks automatically on push to `main` and on pull
+requests. The workflow (`.github/workflows/ci.yml`) includes:
+
+| Job | Description |
+|---|---|
+| `lint` | Ruff (Python) + ESLint/Prettier (TypeScript) |
+| `typecheck` | TypeScript type checking |
+| `test-backend` | pytest with coverage (90% threshold) |
+| `test-frontend` | Vitest with coverage (90% threshold) |
+| `depcheck` | Unused dependency detection |
 
 ### Backend Tests
 

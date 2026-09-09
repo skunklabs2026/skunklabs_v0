@@ -29,6 +29,7 @@ dev = [
     "pytest-cov==6.0.0",
     "httpx==0.28.1",
     "ruff==0.9.2",
+    "pre-commit==4.0.1",
 ]
 
 [project.scripts]
@@ -48,6 +49,19 @@ filterwarnings = [
     # Starlette's TestClient reaches through a deprecated anyio alias. Not
     # ours to fix, and it would otherwise be the only noise in a clean run.
     "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["backend/__pycache__/*"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
 ]
 
 # ---------------------------------------------------------------------------
