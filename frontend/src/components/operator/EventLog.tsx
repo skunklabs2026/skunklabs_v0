@@ -9,9 +9,18 @@ interface Props {
 /**
  * The operator event log.
  *
- * The reference document requires every important event to be timestamped and
- * visible: detection, track acquired/lost, threat state, authorization and
- * actuation. This is that record, streamed live from the backend.
+ * Every entry carries a structured `code` alongside its prose, and the code
+ * is what is shown:
+ *
+ *   18:40:11  OBJECT_DETECTED
+ *   18:40:12  TRACK_CREATED            UAV-001
+ *   18:40:19  LAUNCH_COMMAND_ISSUED    UAV-001
+ *   18:40:19  ACTUATOR_ACKNOWLEDGED    UAV-001
+ *
+ * That is a deliberate change from showing the sentence. A column of codes
+ * scans as a sequence of events — which is what an operator watching a run
+ * and an engineer reading a mission report both need. The prose is still
+ * there, on hover, for when the code is not enough.
  */
 export function EventLog({ events }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -41,16 +50,18 @@ export function EventLog({ events }: Props) {
         {events.length === 0 && (
           <div className="log-entry">
             <span className="log-time">--:--:--</span>
-            <span>Awaiting telemetry…</span>
+            <span className="log-code">AWAITING_TELEMETRY</span>
           </div>
         )}
         {events.map((event, index) => (
           <div
             key={`${event.timestamp}-${index}`}
             className={`log-entry kind-${event.kind}`}
+            title={event.message}
           >
             <span className="log-time">{formatClock(event.timestamp)}</span>
-            <span>{event.message}</span>
+            <span className="log-code">{event.code}</span>
+            <span className="log-target">{event.target_id ?? ""}</span>
           </div>
         ))}
       </div>

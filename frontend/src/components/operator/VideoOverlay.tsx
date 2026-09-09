@@ -270,9 +270,16 @@ export function EngagementOverlay({
  * renders at a true, constant pixel size at any window dimension.
  */
 export function TargetLabels({ targets, state }: Props) {
+  // Only confirmed tracks are labelled. Unconfirmed ones all carry the
+  // designation "UNCONFIRMED", so labelling them stacked several identical,
+  // indistinguishable captions over the same corner of the frame and buried
+  // the target the mission is acting on. Their boxes are still drawn — seeing
+  // the detector working is useful — they simply do not get a caption.
+  const labelled = targets.filter((target) => target.tracking);
+
   return (
     <div className="overlay">
-      {targets.map((target, index) => {
+      {labelled.map((target, index) => {
         const color = targetColor(target, state);
         return (
           <div

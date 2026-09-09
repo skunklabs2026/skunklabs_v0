@@ -14,6 +14,20 @@ export type MissionState =
   | "TARGET_LOST"
   | "ERROR";
 
+export type MissionPhase =
+  | "SEARCH"
+  | "DETECT"
+  | "TRACK"
+  | "CONFIRM"
+  | "FOLLOW"
+  | "AUTHORIZE"
+  | "LAUNCH";
+
+export type PhaseStatus =
+  | "PENDING"
+  | "ACTIVE"
+  | "COMPLETE";
+
 export type EventKind =
   | "info"
   | "detection"
@@ -23,6 +37,34 @@ export type EventKind =
   | "actuation"
   | "warning"
   | "error";
+
+export type EventCode =
+  | "SYSTEM_START"
+  | "SYSTEM_INFO"
+  | "SOURCE_CHANGED"
+  | "SENSOR_LOST"
+  | "SENSOR_RESTORED"
+  | "OBJECT_DETECTED"
+  | "TRACK_CREATED"
+  | "TRACK_CONFIRMED"
+  | "TRACK_LOST"
+  | "TRACK_REACQUIRED"
+  | "THREAT_CRITERIA_MET"
+  | "FOLLOWING_TARGET"
+  | "ENGAGEMENT_READY"
+  | "ENGAGEMENT_NOT_READY"
+  | "AUTHORIZATION_REQUESTED"
+  | "AUTHORIZATION_REJECTED"
+  | "OPERATOR_AUTHORIZED"
+  | "LAUNCH_COMMAND_ISSUED"
+  | "ACTUATOR_ACKNOWLEDGED"
+  | "ACTUATOR_REJECTED"
+  | "LAUNCHER_SAFED"
+  | "INTERCEPTOR_RELEASE_SIMULATED"
+  | "MISSION_RESET"
+  | "STATE_CHANGE"
+  | "WARNING"
+  | "ERROR";
 
 export type InterceptorPhase =
   | "IDLE"
@@ -35,6 +77,56 @@ export type PlatformClass =
   | "UNKNOWN"
   | "MULTIROTOR"
   | "FIXED_WING";
+
+export type SubsystemId =
+  | "SYSTEM"
+  | "SENSOR"
+  | "PERCEPTION"
+  | "TRACKER"
+  | "COMPUTE"
+  | "LINK"
+  | "LAUNCHER"
+  | "INTERCEPTOR"
+  | "POWER"
+  | "TEMPERATURE";
+
+export type SubsystemState =
+  | "OPERATIONAL"
+  | "ONLINE"
+  | "LOCAL"
+  | "SAFE"
+  | "ARMED"
+  | "STOWED"
+  | "INITIALISING"
+  | "DEGRADED"
+  | "OFFLINE"
+  | "FAULT"
+  | "N/A"
+  | "NOT CONNECTED"
+  | "NOT CALIBRATED";
+
+export type ReadinessState =
+  | "NOT_READY"
+  | "READY_FOR_AUTHORIZATION"
+  | "AUTHORIZED"
+  | "LAUNCH_COMMAND_ISSUED";
+
+export type LauncherState =
+  | "SAFE"
+  | "ARMED"
+  | "COMMAND_RECEIVED"
+  | "ACKNOWLEDGED"
+  | "SPENT"
+  | "FAULT";
+
+export type TrackStability =
+  | "UNAVAILABLE"
+  | "UNSTABLE"
+  | "SETTLING"
+  | "STABLE";
+
+export type TacticalFrame =
+  | "SENSOR_FRAME";
 
 export interface BBox {
   x: number;
@@ -145,6 +237,8 @@ export interface Target {
   trail: Point[];
   is_primary: boolean;
   trajectory: Trajectory | null;
+  /** Operator-facing, sensor-frame view of the extrapolation. */
+  projection: TrackProjection | null;
   platform: PlatformClass;
   platform_label: string;
   platform_features: PlatformFeatures | null;
@@ -184,12 +278,116 @@ export interface MissionStatus {
   detail: string;
   progress: number;
   state_since: number;
+  /** Derived on the backend — the UI renders it, it never computes one. */
+  phase: MissionPhase;
+  phases: PhaseProgress[];
+}
+
+export interface PhaseProgress {
+  phase: MissionPhase;
+  status: PhaseStatus;
+  progress: number;
 }
 
 export interface MissionEvent {
   timestamp: number;
   kind: EventKind;
   message: string;
+  code: EventCode;
+  target_id: string | null;
+}
+
+export interface Subsystem {
+  id: SubsystemId;
+  label: string;
+  state: SubsystemState;
+  detail: string;
+  /** True only when a real sensor produced this value. */
+  measured: boolean;
+  nominal: boolean;
+}
+
+export interface CanisterStatus {
+  canister_id: string;
+  state: SubsystemState;
+  detail: string;
+  uptime: number;
+  subsystems: Subsystem[];
+}
+
+export interface ReadinessCondition {
+  name: string;
+  met: boolean;
+  detail: string;
+}
+
+export interface EngagementReadiness {
+  state: ReadinessState;
+  conditions: ReadinessCondition[];
+  blocking: string[];
+  detail: string;
+}
+
+export interface LauncherStatus {
+  interface: string;
+  state: LauncherState;
+  simulated: boolean;
+  ready: boolean;
+  commands_issued: number;
+  last_command_id: string | null;
+  last_command_at: number | null;
+  last_acknowledged_at: number | null;
+  detail: string;
+}
+
+/**
+ * A sensor-frame extrapolation. NOT a range, a ground track, an impact
+ * prediction or a firing solution.
+ */
+export interface TrackProjection {
+  valid: boolean;
+  frame: "SENSOR_FRAME";
+  direction_deg: number | null;
+  direction_label: string;
+  stability: TrackStability;
+  horizon: number;
+  confidence: number;
+  points: TrajectoryPoint[];
+}
+
+export interface TacticalTrack {
+  target_id: string;
+  is_primary: boolean;
+  /** -1 (left frame edge) .. +1 (right edge); 0 is boresight. */
+  bearing_norm: number;
+  /** 0 (top of frame) .. 1 (bottom). */
+  elevation_norm: number;
+  apparent_size: number;
+  course_x: number;
+  course_y: number;
+  speed_norm: number;
+  bearing_available: boolean;
+  bearing_deg: number | null;
+  range_available: boolean;
+  range_m: number | null;
+  /** Projected path: future bearing (`x`) / elevation (`y`) pairs. */
+  path: Point[];
+  confidence: number;
+  platform: PlatformClass;
+  track_duration: number;
+  source: string;
+}
+
+export interface TacticalPicture {
+  frame: TacticalFrame;
+  frame_label: string;
+  fov_deg: number | null;
+  calibrated: boolean;
+  /** Confirmed tracks only. */
+  tracks: TacticalTrack[];
+  /** Detections held but not yet confirmed — counted, not plotted. */
+  candidates: number;
+  sources: string[];
 }
 
 export interface TelemetryFrame {
@@ -202,6 +400,10 @@ export interface TelemetryFrame {
   intercept: InterceptSolution | null;
   interceptor: InterceptorState | null;
   events: MissionEvent[];
+  canister: CanisterStatus;
+  readiness: EngagementReadiness;
+  launcher: LauncherStatus;
+  tactical: TacticalPicture;
 }
 
 export interface HistoryMessage {
@@ -215,4 +417,5 @@ export interface CommandResponse {
   ok: boolean;
   state: MissionState;
   detail: string;
+  readiness: ReadinessState;
 }

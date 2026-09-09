@@ -22,16 +22,29 @@ no database.
 
 ## How it runs
 
-The app opens on **Mission Setup**, not on a live feed:
+The app opens on **Canister Setup**, not on a live feed:
 
-1. **Load footage** — drag a video in, or pick one from the local library.
-2. **Choose a detector** — `motion` or `yolo`, with a live confidence slider.
-3. **Confirm it is tracking** — a preview plus the detector's own counters
-   (frames, detections, active tracks, inference time, classes seen). This is
-   how you tell whether the model works on *your* clip before starting.
+1. **Sensor feed** — drag a video in, pick one from the local library, or
+   attach the live camera. Perception settings (detector, confidence
+   threshold) sit behind **Advanced**, because which detector is running is
+   how the canister sees, not what it does.
+2. **Confirm canister ready** — the canister's own subsystem report, a
+   preview, and the detector's counters. This is how you tell whether the
+   system works on *your* clip before starting.
 
-**Begin mission** then opens the operator console. **Change source** in the
-top bar returns to setup at any time.
+**Begin mission** opens the operator console. **Setup** in the top bar returns
+at any time.
+
+The console is built around one entity — CANISTER 01 — and one permanent
+sequence:
+
+```
+SEARCH ✓   DETECT ✓   TRACK ✓   CONFIRM ✓   FOLLOW ●   AUTHORIZE ○   LAUNCH ○
+```
+
+Two views: **SENSOR** (the camera and its overlays) and **TACTICAL** (the
+canister, its detection sector, and the tracks it holds — in relative
+sensor-frame coordinates, labelled as such).
 
 ---
 
@@ -361,6 +374,32 @@ Tunable via `SKUNK_TRAJECTORY_HORIZON`, `SKUNK_INTERCEPTOR_SPEED`,
 
 ---
 
+## Mission recording
+
+Every run is a test. Each one writes a JSON report:
+
+```
+runs/mission_2026_09_09_001.json
+```
+
+It captures the mission id, source and detector, the full state-transition
+sequence, the structured event log, which target was primary, how many tracks
+were created and lost, perception timings, the readiness state *at the moment
+the operator authorized*, the launch command, and the launcher's
+acknowledgement with its latency. Timings appear both absolute (to correlate
+with a launcher log) and relative to the run's start (to compare between runs).
+
+A run opens on start, and on every reset or source change — two clips never
+share one report. Set `SKUNK_RECORD_RUNS=false` to disable, or
+`SKUNK_RUNS_DIR` to write elsewhere. No database: a run is a few hundred
+events and the consumer is a person or a short script.
+
+```bash
+jq '.summary' runs/mission_2026_09_09_001.json
+```
+
+---
+
 ## Configuration
 
 Every tunable lives in `backend/config/settings.py`. Override with
@@ -402,24 +441,69 @@ Track association (`SKUNK_TRACK_IOU_THRESHOLD`, `SKUNK_TRACK_MAX_AGE`,
 ## Architecture
 
 ```
-VIDEO SOURCE      backend/video/source.py       FileVideoSource | CameraVideoSource
+VIDEO SOURCE          backend/video/source.py             FileVideoSource | CameraVideoSource
       ↓
-DETECTOR          backend/vision/detector.py    MotionDetector | YoloDetector
+PERCEPTION            backend/vision/detector.py          MotionDetector | YoloDetector
       ↓
-TRACKER           backend/vision/tracker.py     ByteTracker (persistent IDs)
+TRACK MANAGER         backend/vision/tracker.py           ByteTracker (persistent IDs)
       ↓
-TARGET MANAGER    backend/targets/              designations, primary selection
+TARGET MANAGER        backend/targets/                    designations, primary selection
       ↓
-RULE ENGINE       backend/mission/rules.py      deterministic demo criteria
+THREAT / RULE ENGINE  backend/mission/rules.py            deterministic demo criteria
       ↓
-STATE MACHINE     backend/mission/state_machine.py   authoritative mission state
+MISSION STATE MACHINE backend/mission/state_machine.py    authoritative mission state
       ↓
-FASTAPI + WS      backend/api/                  REST commands + telemetry push
+ENGAGEMENT READINESS  backend/mission/readiness.py        six named preconditions
       ↓
-OPERATOR UI       frontend/src/                 React + Vite, one screen
+OPERATOR AUTHORIZATION                                    manual, always
       ↓
-ACTUATOR          backend/actuation/            ActuatorInterface → SimulatedActuator
+LAUNCH COMMAND        backend/actuation/base.py           LaunchCommand (the hardware seam)
+      ↓
+SAFE ACTUATOR         backend/actuation/simulated.py      ActuatorInterface → SimulatedActuator
+                                                          → LaunchAcknowledgement
+
+                              ↓ telemetry
+
+CANISTER STATUS       backend/canister/status.py          per-subsystem health
+TACTICAL PICTURE      backend/mission/tactical.py         relative, sensor-frame only
+MISSION RECORDING     backend/mission/recording.py        runs/mission_YYYY_MM_DD_NNN.json
+      ↓
+OPERATOR INTERFACE    frontend/src/                       SENSOR / TACTICAL
 ```
+
+### The launcher boundary
+
+The seam a future validated launcher controller attaches to:
+
+```
+MissionController  →  LaunchCommand  →  ActuatorInterface  →  LaunchAcknowledgement
+ (pipeline/            (command_id,       (SimulatedActuator     (command_id,
+  engagement.py)        target, mission     in V0)                 accepted,
+                        state, readiness,                          latency_ms,
+                        authorized_at)                             launcher_state)
+```
+
+Every command carries a unique `command_id` and every command is acknowledged,
+because correlating a command with its reply — and measuring how long the reply
+took — is what makes hardware-in-the-loop testing tractable. A real launcher
+controller implements the same interface; nothing upstream of it changes.
+
+### Engagement readiness
+
+Six deterministic, individually named preconditions, evaluated every frame:
+
+`target_valid` · `track_confirmed` · `track_stable` · `canister_operational` ·
+`launcher_interface_ready` · `authorization_valid`
+
+They derive one state:
+
+`NOT_READY → READY_FOR_AUTHORIZATION → AUTHORIZED → LAUNCH_COMMAND_ISSUED`
+
+The gate is checked *before* the state machine advances, so the operator is
+never offered a control the canister could not honour, and "NOT READY" always
+names the condition that failed. Adding a real hardware precondition — launcher
+continuity, interlock closed, round present — is a field on `ReadinessInputs`
+and a condition in `readiness.py`. Nothing else changes.
 
 `backend/pipeline/` owns the frame loop and wires these together on a worker
 thread, so blocking OpenCV and inference calls never stall the API event loop.
@@ -429,14 +513,26 @@ It is split by role, so a change to one concern touches one file:
 | --- | --- |
 | `pipeline/runtime.py` | the frame loop and the wiring; `MissionPipeline` |
 | `pipeline/perception.py` | pixels → tracks (detector, tracker, stride, health) |
-| `pipeline/engagement.py` | tracks → mission decisions (designation, prediction, actuation) |
+| `pipeline/engagement.py` | the mission controller: designation, projection, readiness, launch command |
 | `pipeline/inputs.py` | which video source and detector are live |
 | `pipeline/hub.py` | shared state between the worker thread and the API |
+
+Alongside the pipeline:
+
+| File | Responsibility |
+| --- | --- |
+| `canister/status.py` | the canister's model of itself, one reporter per subsystem |
+| `mission/readiness.py` | the engagement preconditions and the state they derive |
+| `mission/timeline.py` | `MissionState` → the seven-phase operator timeline |
+| `mission/projection.py` | trajectory → sensor-frame TRACK PROJECTION |
+| `mission/tactical.py` | tracks → the relative tactical picture |
+| `mission/recording.py` | one JSON mission report per run |
+| `actuation/base.py` | `LaunchCommand`, `LaunchAcknowledgement`, `ActuatorInterface` |
 
 The API layer is split the same way — `api/routers/{system,mission,source,stream}.py`,
 one module per role, aggregated by `api/routers/__init__.py`.
 
-Two principles worth knowing before changing anything:
+Four principles worth knowing before changing anything:
 
 - **The backend is the sole source of mission state.** The UI renders what it
   receives and never derives state locally. A UI that can disagree with the
@@ -444,6 +540,15 @@ Two principles worth knowing before changing anything:
 - **Actuation requires an explicit operator authorization**, enforced in the
   state machine (not in the UI or the route). `request_authorization()` is
   rejected unless the mission is in `AWAITING_AUTHORIZATION`.
+- **Nothing is displayed as a measurement unless it was measured.** A single
+  uncalibrated camera cannot produce range, absolute speed, time-to-impact or a
+  firing solution. Where the geometry is unconstrained the console says
+  `NOT CALIBRATED`, `N/A` or `NOT CONNECTED` rather than showing a plausible
+  number. This is a product rule, not a nicety: one invented figure makes every
+  real figure on the panel untrustworthy.
+- **Readiness never authorizes.** No combination of healthy subsystems can move
+  the mission to `AUTHORIZED`; readiness can only withhold the operator's
+  control, never substitute for it.
 
 ### States
 
@@ -451,6 +556,15 @@ Two principles worth knowing before changing anything:
 AWAITING_AUTHORIZATION · AUTHORIZED · ACTUATED · TARGET_LOST · ERROR`
 
 Off-nominal: any tracking state → `TARGET_LOST` → `SEARCHING`.
+
+The operator timeline is a coarser projection of these states, computed in
+`mission/timeline.py` and shipped inside `MissionStatus`:
+
+`SEARCH · DETECT · TRACK · CONFIRM · FOLLOW · AUTHORIZE · LAUNCH`
+
+It lives in the telemetry contract rather than in the UI so there is exactly
+one state machine in the system. `TARGET_LOST` rewinds the timeline to
+`SEARCH` — a lost target is a setback, not a step.
 
 Once authorization is accepted, losing the target does **not** cancel the
 engagement — the operator's decision stands and the sequence completes.
@@ -604,6 +718,19 @@ infrastructure · multi-canister networking.
 GPIO test pin) can be attached later without touching mission logic. It must
 not be used for projectile firing or weapon release.
 
+The tactical view is a **relative** picture in the sensor frame. There is no
+GPS, no compass and no rangefinder in V0, so `TacticalTrack.bearing_available`
+and `range_available` are both false and the view labels itself
+`LOCAL TRACK · RELATIVE COORDINATES · SENSOR FRAME`. The structure carries
+those flags so a calibrated sensor, an external track feed or a second canister
+can supply real geometry later — but nothing may fabricate it in the meantime.
+
+`TrackProjection` replaced the earlier "time to impact" and inferred-range
+readouts. Those were the output of an image-plane extrapolation with no camera
+calibration behind them; shown in seconds and metres they read as measurements
+and were not. What remains is direction, stability, horizon and projection
+confidence, all stated as sensor-frame quantities.
+
 ---
 
 ## Repository layout
@@ -618,11 +745,18 @@ backend/
   targets/target_manager.py designations, primary selection
   mission/rules.py          deterministic demo criteria
   mission/state_machine.py  authoritative mission state
+  mission/timeline.py       mission state -> the seven-phase timeline
+  mission/readiness.py      EngagementReadiness — the gate before the launcher
+  mission/projection.py     TRACK PROJECTION (sensor frame, not a solution)
+  mission/tactical.py       relative tactical picture
+  mission/recording.py      MissionRun + JSON reports in runs/
+  canister/status.py        per-subsystem canister health model
   mission/trajectory.py     path prediction + intercept estimate (display)
   mission/classification.py FPV multirotor vs fixed-wing, from kinematics
   mission/speed.py          absolute speed inference from assumed airframe size
   video/library.py          local video library, upload validation
-  actuation/                ActuatorInterface + SimulatedActuator
+  actuation/base.py         LaunchCommand + ActuatorInterface (the hardware seam)
+  actuation/simulated.py    SimulatedActuator — accepts and acknowledges commands
   actuation/interceptor.py  simulated interceptor flight (animation)
   api/deps.py               shared FastAPI dependencies
   api/models.py             inbound request bodies
@@ -645,13 +779,15 @@ frontend/src/
     client.ts               transport + ApiError
     mission.ts, source.ts   typed calls by role
   screens/                  SetupScreen, OperatorScreen (layout only)
-  components/setup/         dropzone, library, detector choice, verification
-  components/operator/      video stage, overlays, banner, side panel, log
+  components/setup/         dropzone, library, advanced perception settings
+  components/operator/      timeline, sensor + tactical views, target,
+                            readiness, canister, details, event log
   components/common/        readout primitives, ErrorBoundary
   hooks/useTelemetry.ts     WebSocket subscription
   hooks/useSource.ts        input selection state
   hooks/useMissionCues.ts   launch cue + authorize hotkey
   hooks/useMediaQuery.ts    breakpoints for structural layout changes
+  hooks/useViewMode.ts      SENSOR / TACTICAL selection
   styles/                   tokens, base, setup, operator, responsive
   format.ts                 shared display formatting
   types.ts                  generated from backend/schemas.py

@@ -23,7 +23,12 @@ async def authorize(pipeline: PipelineDep) -> CommandResponse:
     the mission has reached AWAITING_AUTHORIZATION.
     """
     ok, detail = pipeline.authorize()
-    return CommandResponse(ok=ok, state=pipeline.mission.state, detail=detail)
+    return CommandResponse(
+        ok=ok,
+        state=pipeline.mission.state,
+        detail=detail,
+        readiness=pipeline.readiness_state(),
+    )
 
 
 @router.post("/api/reset", response_model=CommandResponse)
@@ -34,4 +39,5 @@ async def reset(pipeline: PipelineDep) -> CommandResponse:
         ok=True,
         state=pipeline.mission.state,
         detail="Mission reset. Ready for a new run.",
+        readiness=pipeline.readiness_state(),
     )

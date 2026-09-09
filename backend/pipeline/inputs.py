@@ -17,7 +17,7 @@ import threading
 from pathlib import Path
 
 from backend.config.settings import Settings
-from backend.schemas import EventKind, SourceStatus
+from backend.schemas import EventCode, EventKind, SourceStatus
 from backend.video.library import VideoLibrary
 from backend.video.source import (
     CameraVideoSource,
@@ -123,6 +123,7 @@ class InputController:
             self._emit(
                 EventKind.ERROR,
                 f"Could not open {label}. Keeping {previous.describe}.",
+                code=EventCode.ERROR,
             )
             log.error("Failed to open %s; retaining previous source", label)
             with self._lock:
@@ -135,7 +136,11 @@ class InputController:
         previous.release()
         with self._lock:
             self.video = source
-        self._emit(EventKind.INFO, f"Video source: {source.describe}.")
+        self._emit(
+            EventKind.INFO,
+            f"Video source: {source.describe}.",
+            code=EventCode.SOURCE_CHANGED,
+        )
         log.info("Video source switched to %s", source.describe)
         return f"Source changed to {label}"
 
@@ -159,10 +164,13 @@ class InputController:
             EventKind.ERROR,
             f"{kind.upper()} unavailable (install requirements-yolo.txt). "
             "Keeping motion detector.",
+            code=EventCode.ERROR,
         )
 
     def confirm_detector(self, name: str) -> None:
-        self._emit(EventKind.INFO, f"Detector: {name}.")
+        self._emit(
+            EventKind.INFO, f"Detector: {name}.", code=EventCode.SOURCE_CHANGED
+        )
         log.info("Detector switched to %s", name)
 
     # ------------------------------------------------------------------

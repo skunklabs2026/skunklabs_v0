@@ -90,6 +90,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SKUNK_TARGET_FPS", "60")
     monkeypatch.setenv("SKUNK_VIDEO_LIBRARY_DIR", str(library))
     monkeypatch.setenv("SKUNK_UPLOAD_DIR", str(library / "uploads"))
+    # Mission reports go to a temp directory so a test run never leaves
+    # reports in the repository's `runs/`.
+    monkeypatch.setenv("SKUNK_RUNS_DIR", str(tmp_path / "runs"))
 
     from backend.main import create_app
 

@@ -363,3 +363,64 @@
   color: var(--text-faint);
   cursor: not-allowed;
 }
+
+/* ============================================================
+   CANISTER SETUP — added for the operational V0
+   ============================================================ */
+
+.setup-mode {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.setup-hint {
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin: -0.35rem 0 0.9rem;
+}
+
+/* ---------------- pre-flight subsystems ---------------- */
+
+.preflight {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+  margin-bottom: var(--gap);
+}
+
+/* ---------------- advanced disclosure ---------------- */
+
+/* Perception settings are one click away, not on the front page: which
+   detector is running is how the canister sees, not what it does. */
+.advanced {
+  margin-top: var(--gap);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+}
+
+.advanced-body {
+  padding: 0 1rem 1rem;
+}
+
+.advanced-summary {
+  padding: 0 1rem 0.9rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.advanced-summary b {
+  color: var(--text-dim);
+  font-weight: 600;
+}

@@ -15,8 +15,9 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 
-from backend.schemas import EventKind, MissionEvent, TelemetryFrame
+from backend.schemas import EventCode, EventKind, MissionEvent, TelemetryFrame
 
 
 class TelemetryHub:
@@ -41,16 +42,45 @@ class TelemetryHub:
         self._events: deque[MissionEvent] = deque(maxlen=event_log_size)
         self._pending: list[MissionEvent] = []
 
+        # Optional sink, set by the pipeline so every emitted event also
+        # reaches the mission recorder. A callback rather than a direct
+        # reference keeps the hub ignorant of what recording is.
+        self._observer: Callable[[MissionEvent], None] | None = None
+
+    def observe(self, observer: Callable[[MissionEvent], None] | None) -> None:
+        """Register a sink that receives every emitted event."""
+        with self.lock:
+            self._observer = observer
+
     # ------------------------------------------------------------------
     # Events
     # ------------------------------------------------------------------
 
-    def emit(self, kind: EventKind, message: str) -> MissionEvent:
+    def emit(
+        self,
+        kind: EventKind,
+        message: str,
+        *,
+        code: EventCode = EventCode.SYSTEM_INFO,
+        target_id: str | None = None,
+    ) -> MissionEvent:
         """Record an operator-facing event. Safe to call from any thread."""
-        event = MissionEvent(timestamp=time.time(), kind=kind, message=message)
+        event = MissionEvent(
+            timestamp=time.time(),
+            kind=kind,
+            message=message,
+            code=code,
+            target_id=target_id,
+        )
         with self.lock:
             self._events.append(event)
             self._pending.append(event)
+            # Held under the lock deliberately: the observer accumulates the
+            # mission run, and `emit` is called from both the worker thread
+            # and the API thread. The observer does in-memory bookkeeping
+            # only — no I/O — so this cannot stall the frame loop.
+            if self._observer is not None:
+                self._observer(event)
         return event
 
     def drain_pending(self) -> list[MissionEvent]:

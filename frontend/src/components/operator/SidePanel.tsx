@@ -1,24 +1,29 @@
 import { useState } from "react";
 import { ErrorBoundary } from "../common/ErrorBoundary";
+import { CanisterPanel } from "./CanisterPanel";
+import { DetailsPanel } from "./DetailsPanel";
 import { EventLog } from "./EventLog";
-import { StatusPanel } from "./StatusPanel";
+import { ReadinessPanel } from "./ReadinessPanel";
+import { TargetPanel } from "./TargetPanel";
 import type {
-  InterceptorState,
-  InterceptSolution,
+  CanisterStatus,
+  EngagementReadiness,
+  LauncherStatus,
   MissionEvent,
-  MissionStatus,
+  MissionState,
   SystemStatus,
   Target,
 } from "../../types";
 
 interface Props {
   system: SystemStatus | null;
-  mission: MissionStatus | null;
+  canister: CanisterStatus | null;
+  readiness: EngagementReadiness | null;
+  launcher: LauncherStatus | null;
   primary: Target | null;
+  state: MissionState;
   events: MissionEvent[];
   connected: boolean;
-  intercept: InterceptSolution | null;
-  interceptor: InterceptorState | null;
   /** Narrow viewport: show one section at a time behind tabs. */
   compact: boolean;
   onReset: () => void;
@@ -28,28 +33,33 @@ interface Props {
 type Tab = "status" | "events";
 
 /**
- * The console's right-hand column: readouts, event log, controls.
+ * The console's right-hand column, in strict priority order:
  *
- * On a wide screen both sections are visible at once, which is what an
- * operator at a desk wants. On a phone that column would be a metre of
- * scrolling below the video, so the two sections become tabs and the video
- * stays in view.
+ *   TARGET      →  who the canister is acting on
+ *   READINESS   →  whether it could engage, and what is blocking it
+ *   CANISTER    →  whether the machine itself is healthy
+ *   DETAILS     →  engineering information, collapsed
+ *
+ * On a wide screen everything is visible at once, which is what an operator
+ * at a desk wants. On a phone that column would be a metre of scrolling below
+ * the video, so status and events become tabs and the sensor view stays in
+ * frame.
  */
 export function SidePanel({
   system,
-  mission,
+  canister,
+  readiness,
+  launcher,
   primary,
+  state,
   events,
   connected,
-  intercept,
-  interceptor,
   compact,
   onReset,
   onChangeSource,
 }: Props) {
   const [tab, setTab] = useState<Tab>("status");
 
-  // Unread count is only meaningful when the log is hidden behind a tab.
   const showStatus = !compact || tab === "status";
   const showEvents = !compact || tab === "events";
 
@@ -82,16 +92,20 @@ export function SidePanel({
       )}
 
       {showStatus && (
-        <ErrorBoundary label="Status">
-          <StatusPanel
-            system={system}
-            mission={mission}
-            primary={primary}
-            connected={connected}
-            intercept={intercept}
-            interceptor={interceptor}
-          />
-        </ErrorBoundary>
+        <>
+          <ErrorBoundary label="Target">
+            <TargetPanel primary={primary} state={state} />
+          </ErrorBoundary>
+          <ErrorBoundary label="Readiness">
+            <ReadinessPanel readiness={readiness} launcher={launcher} />
+          </ErrorBoundary>
+          <ErrorBoundary label="Canister">
+            <CanisterPanel canister={canister} connected={connected} />
+          </ErrorBoundary>
+          <ErrorBoundary label="Details">
+            <DetailsPanel primary={primary} system={system} />
+          </ErrorBoundary>
+        </>
       )}
 
       {showEvents && (
@@ -105,7 +119,7 @@ export function SidePanel({
           Reset Mission
         </button>
         <button type="button" className="ghost-button" onClick={onChangeSource}>
-          Change Source
+          Canister Setup
         </button>
       </div>
     </aside>

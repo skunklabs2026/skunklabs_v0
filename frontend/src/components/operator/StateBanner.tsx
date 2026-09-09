@@ -1,10 +1,11 @@
 import type { CSSProperties } from "react";
 import { STATE_COLOR, STATE_LABEL, URGENT_STATES } from "../../format";
-import type { MissionState, MissionStatus } from "../../types";
+import type { EngagementReadiness, MissionState, MissionStatus } from "../../types";
 
 interface Props {
   state: MissionState;
   mission: MissionStatus | null;
+  readiness: EngagementReadiness | null;
   onAuthorize: () => void;
 }
 
@@ -14,10 +15,22 @@ interface Props {
  * The button's enabled state comes straight from `mission.can_authorize`,
  * which the backend state machine owns. The UI never decides for itself that
  * authorization is allowed.
+ *
+ * When the control is unavailable the banner says *why*, taken from the
+ * readiness gate. "Authorize (disabled)" with no explanation is the kind of
+ * dead end that makes an operator distrust the whole console.
  */
-export function StateBanner({ state, mission, onAuthorize }: Props) {
+export function StateBanner({ state, mission, readiness, onAuthorize }: Props) {
   const armed = Boolean(mission?.can_authorize);
-  const done = state === "AUTHORIZED" || state === "ACTUATED";
+  const issued = state === "AUTHORIZED" || state === "ACTUATED";
+
+  // The readiness detail is more specific than the mission detail whenever
+  // the mission is waiting on a precondition rather than on time.
+  const blocked = Boolean(readiness?.blocking.length) && !armed && !issued;
+  const detail =
+    blocked && readiness
+      ? readiness.detail
+      : (mission?.detail ?? "Connecting to canister…");
 
   return (
     <div
@@ -31,8 +44,8 @@ export function StateBanner({ state, mission, onAuthorize }: Props) {
     >
       <div style={{ minWidth: 0 }}>
         <div className="banner-state">{STATE_LABEL[state]}</div>
-        <div className="banner-detail" title={mission?.detail}>
-          {mission?.detail ?? "Connecting to canister…"}
+        <div className="banner-detail" title={detail}>
+          {detail}
         </div>
       </div>
 
@@ -42,7 +55,7 @@ export function StateBanner({ state, mission, onAuthorize }: Props) {
         disabled={!armed}
         onClick={onAuthorize}
       >
-        {done ? "Authorized" : "Authorize"}
+        {issued ? "Authorized" : "Authorize"}
       </button>
     </div>
   );

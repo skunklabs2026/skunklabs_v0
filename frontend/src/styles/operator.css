@@ -314,7 +314,9 @@
 
 .log-entry {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  /* time | code | target — three columns, so codes align into a scannable
+     column rather than ragging against a variable-length sentence. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.6rem;
   font-family: var(--font-label);
   font-size: 0.6rem;
@@ -421,4 +423,488 @@
   .launch-label {
     animation: none;
   }
+}
+
+/* ============================================================
+   OPERATIONAL CANISTER — identity, sequence, views, readiness
+
+   Added for the operational V0. Everything here derives from the
+   existing tokens; no new colours, no new type faces.
+   ============================================================ */
+
+/* ---------------- canister identity ---------------- */
+
+.topbar.is-canister {
+  gap: 1.25rem;
+}
+
+.identity {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+/* The product, named. This is the largest thing in the header on purpose:
+   the main entity in the application is the canister, not the model. */
+.canister-id {
+  font-family: var(--font-label);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.link-badge {
+  font-family: var(--font-label);
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.link-state {
+  color: var(--text-dim);
+}
+
+/* ---------------- mission timeline ---------------- */
+
+.timeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0 clamp(1rem, 2.5vw, 1.75rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-raise);
+  flex: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.timeline::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline.is-waiting {
+  padding: 0.7rem clamp(1rem, 2.5vw, 1.75rem);
+}
+
+.timeline-waiting,
+.phase {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.phase {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.15rem;
+  white-space: nowrap;
+  flex: 1 1 0;
+  min-width: max-content;
+  justify-content: center;
+  transition:
+    color 220ms ease,
+    background 220ms ease;
+}
+
+/* Chevron separators, so the row reads as a sequence rather than a list. */
+.phase + .phase::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.phase-mark {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.phase.is-complete {
+  color: var(--ok);
+}
+
+.phase.is-active {
+  color: var(--accent);
+  background: var(--accent-glow);
+  font-weight: 600;
+}
+
+.phase.is-pending {
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
+/* Progress within the active step, so a dwell timer is visible rather than
+   the step simply sitting there looking stuck. */
+.phase-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left center;
+  transition: transform 160ms linear;
+}
+
+/* ---------------- view switch ---------------- */
+
+.view-switch {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.view-tab {
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 0.45rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.view-tab:hover {
+  color: var(--text-dim);
+  border-color: var(--text-faint);
+}
+
+.view-tab.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* The stage now carries the view switch above the viewport. */
+.stage {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+/* ---------------- tactical view ---------------- */
+
+.tactical {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 0.5rem;
+}
+
+.tactical-plot {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  color: var(--text-faint);
+}
+
+.tac-sector {
+  fill: var(--accent-glow);
+  stroke: var(--line);
+  stroke-width: 0.3;
+}
+
+.tac-ring {
+  stroke: var(--line-soft);
+  stroke-width: 0.25;
+  fill: none;
+}
+
+.tac-boresight {
+  stroke: var(--line);
+  stroke-width: 0.25;
+  stroke-dasharray: 1.5 1.5;
+}
+
+.tac-canister {
+  fill: var(--accent);
+}
+
+.tac-canister-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.4;
+  opacity: 0.5;
+}
+
+.tac-label {
+  font-family: var(--font-label);
+  font-size: 3.4px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.tac-label.is-canister {
+  fill: var(--text-faint);
+  font-size: 2.6px;
+}
+
+.tac-track.is-primary {
+  filter: drop-shadow(0 0 1.5px currentColor);
+}
+
+/* Secondary tracks are marks, not entries. Present, deliberately quiet. */
+.tac-secondary {
+  fill: var(--text-faint);
+  opacity: 0.55;
+}
+
+/* Stated on the view itself, so a screenshot taken out of context cannot be
+   mistaken for a geographic display. */
+.tactical-frame-label {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  text-align: center;
+  font-family: var(--font-label);
+  font-size: 0.5rem;
+  letter-spacing: 0.16em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Track counts, including the unconfirmed candidates that are deliberately
+   counted rather than plotted. */
+.tactical-meta {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.tactical-candidates {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+
+/* ---------------- readouts ---------------- */
+
+.readout-spaced {
+  margin-top: 0.85rem;
+}
+
+/* ---------------- engagement readiness ---------------- */
+
+.readiness-state {
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--state-color, var(--idle));
+  line-height: 1.2;
+}
+
+.readiness-detail {
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  line-height: 1.45;
+}
+
+.conditions {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.condition {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.condition-mark {
+  width: 0.8rem;
+  flex: none;
+  text-align: center;
+}
+
+.condition.is-met {
+  color: var(--ok);
+}
+
+.launcher-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.launcher-state {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+}
+
+.launcher-command {
+  margin-top: 0.4rem;
+  font-family: var(--font-label);
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+}
+
+/* ---------------- canister subsystems ---------------- */
+
+.subsystems {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.subsystem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subsystem-name {
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subsystem-state {
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.subsystem.is-ok .subsystem-state {
+  color: var(--ok);
+}
+
+.subsystem.is-bad .subsystem-state {
+  color: var(--threat);
+}
+
+/* Nothing to report reads as absent, not as broken. */
+.subsystem.is-unknown .subsystem-name,
+.subsystem.is-unknown .subsystem-state {
+  color: var(--text-faint);
+  opacity: 0.7;
+}
+
+/* ---------------- details disclosure ---------------- */
+
+.details {
+  padding: 0;
+}
+
+.details-toggle,
+.advanced-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: var(--pad-card);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  transition: color 150ms ease;
+}
+
+.details-toggle:hover,
+.advanced-toggle:hover {
+  color: var(--accent);
+}
+
+.details-body {
+  padding: 0 1rem 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.details-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.details-title {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-label);
+  font-size: 0.5rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* ---------------- event log ---------------- */
+
+/* Codes, not sentences: a column of codes scans as a sequence of events. */
+.log-code {
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-target {
+  color: var(--text-faint);
+  text-align: right;
+  white-space: nowrap;
 }

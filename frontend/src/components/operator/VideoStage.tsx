@@ -61,16 +61,18 @@ export function VideoStage({
         <span className="corner bl" />
         <span className="corner br" />
 
+        {/* Sensor identity, not model identity. Which detector is running is
+            engineering information and lives under DETAILS. */}
         <div className="feed-meta">
           {system
-            ? `${system.video_source} · ${system.detector} · ${system.fps.toFixed(0)} fps · frame ${system.frame_index}`
-            : "awaiting feed"}
+            ? `SENSOR 01 · ${system.frame_width}×${system.frame_height} · ${system.fps.toFixed(0)} fps · frame ${system.frame_index}`
+            : "awaiting sensor"}
         </div>
 
         {launching && (
           <>
             <div className="launch-flash" />
-            <div className="launch-label">Launch Simulated</div>
+            <div className="launch-label">Launch Command Issued · Simulated</div>
           </>
         )}
 

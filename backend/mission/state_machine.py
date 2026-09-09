@@ -38,9 +38,11 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Protocol
 
 from backend.mission.rules import RuleEngine
-from backend.schemas import EventKind, MissionState, MissionStatus
+from backend.mission.timeline import active_phase, build_timeline
+from backend.schemas import EventCode, EventKind, MissionState, MissionStatus
 from backend.vision.tracker import Track
 
 log = logging.getLogger(__name__)
@@ -57,7 +59,48 @@ _TRACKING_STATES = frozenset(
     }
 )
 
-EventEmitter = Callable[[EventKind, str], None]
+class EventEmitter(Protocol):
+    """How the machine reports to the operator.
+
+    Structured: `code` is what a mission report filters on, `message` is what
+    a person reads. Both are always supplied — a transition that logs only
+    prose is invisible to field-test analysis.
+    """
+
+    def __call__(
+        self,
+        kind: EventKind,
+        message: str,
+        *,
+        code: EventCode = ...,
+        target_id: str | None = ...,
+    ) -> object: ...
+
+
+def _null_emitter(
+    kind: EventKind,
+    message: str,
+    *,
+    code: EventCode = EventCode.SYSTEM_INFO,
+    target_id: str | None = None,
+) -> None:
+    """Used when no emitter is injected, e.g. in unit tests."""
+
+
+# Which structured code each state transition carries. Derived from the state
+# being entered, so a new state cannot silently log as SYSTEM_INFO.
+_STATE_EVENT_CODE: dict[MissionState, EventCode] = {
+    MissionState.SEARCHING: EventCode.STATE_CHANGE,
+    MissionState.DETECTED: EventCode.OBJECT_DETECTED,
+    MissionState.TRACKING: EventCode.TRACK_CONFIRMED,
+    MissionState.THREAT_CONFIRMED: EventCode.THREAT_CRITERIA_MET,
+    MissionState.FOLLOWING: EventCode.FOLLOWING_TARGET,
+    MissionState.AWAITING_AUTHORIZATION: EventCode.ENGAGEMENT_READY,
+    MissionState.AUTHORIZED: EventCode.OPERATOR_AUTHORIZED,
+    MissionState.ACTUATED: EventCode.INTERCEPTOR_RELEASE_SIMULATED,
+    MissionState.TARGET_LOST: EventCode.TRACK_LOST,
+    MissionState.ERROR: EventCode.ERROR,
+}
 
 
 @dataclass
@@ -83,7 +126,7 @@ class MissionStateMachine:
     ) -> None:
         self.rules = rule_engine
         self.config = config
-        self._emit = emit or (lambda kind, message: None)
+        self._emit: EventEmitter = emit or _null_emitter
         self._clock = clock
 
         # The machine's notion of "now". Refreshed at the top of update() from
@@ -110,6 +153,12 @@ class MissionStateMachine:
         # Timestamp the primary target was last seen, for the lost-grace timer.
         self._last_seen_at: float | None = None
 
+        # The engagement-readiness gate, refreshed each frame by the caller.
+        # Defaults open so the machine remains usable — and unit-testable —
+        # without a readiness evaluator attached.
+        self._engagement_ready = True
+        self._readiness_detail = ""
+
     # ------------------------------------------------------------------
     # Public state
     # ------------------------------------------------------------------
@@ -123,6 +172,16 @@ class MissionStateMachine:
         return self._target_id
 
     @property
+    def authorized_at(self) -> float | None:
+        """When the operator's authorization was accepted.
+
+        Recorded separately from the launch command's own timestamp: the two
+        are a frame apart, and a report that conflates them cannot answer how
+        long the system took to act on the decision.
+        """
+        return self._authorized_at
+
+    @property
     def can_authorize(self) -> bool:
         """Whether the AUTHORIZE control should be active.
 
@@ -132,14 +191,19 @@ class MissionStateMachine:
         return self._state is MissionState.AWAITING_AUTHORIZATION
 
     def status(self) -> MissionStatus:
+        progress = round(self._progress, 4)
         return MissionStatus(
             state=self._state,
             target_id=self._target_id,
             authorization_required=self._state is MissionState.AWAITING_AUTHORIZATION,
             can_authorize=self.can_authorize,
             detail=self._detail,
-            progress=round(self._progress, 4),
+            progress=progress,
             state_since=round(self._now - self._state_entered_at, 3),
+            # Built here rather than in the UI, so the timeline is a view of
+            # this machine's state and cannot drift away from it.
+            phase=active_phase(self._state),
+            phases=build_timeline(self._state, progress),
         )
 
     # ------------------------------------------------------------------
@@ -158,13 +222,23 @@ class MissionStateMachine:
                 f"Authorization rejected: mission is {self._state.value}, "
                 "not awaiting authorization."
             )
-            self._emit(EventKind.WARNING, detail)
+            self._emit(
+                EventKind.WARNING,
+                detail,
+                code=EventCode.AUTHORIZATION_REJECTED,
+                target_id=self._target_id,
+            )
             log.warning(detail)
             return False, detail
 
         self._authorization_requested = True
         detail = f"Operator authorization received for {self._target_id}."
-        self._emit(EventKind.AUTHORIZATION, detail)
+        self._emit(
+            EventKind.AUTHORIZATION,
+            detail,
+            code=EventCode.AUTHORIZATION_REQUESTED,
+            target_id=self._target_id,
+        )
         log.info(detail)
         return True, detail
 
@@ -177,6 +251,11 @@ class MissionStateMachine:
         self._last_seen_at = None
         self._target_id = None
         self._progress = 0.0
+        # Logged as a state change, not as MISSION_RESET. The machine resets
+        # itself for several reasons — an operator command, a video
+        # discontinuity, the auto-reset after actuation — and only the caller
+        # knows which. The caller emits the single MISSION_RESET; emitting one
+        # here too would double every reset in the log and in the report.
         self._transition(
             MissionState.SEARCHING,
             "No target. Sensor active, detector running.",
@@ -193,14 +272,23 @@ class MissionStateMachine:
         primary_designation: str | None,
         *,
         now: float | None = None,
+        engagement_ready: bool = True,
+        readiness_detail: str = "",
     ) -> MissionStatus:
         """Advance the machine one frame.
 
         `primary` is the target the mission acts on, or None if there is no
         usable track this frame.
+
+        `engagement_ready` is the verdict from `EngagementReadiness` for every
+        precondition except the operator's authorization itself. It gates the
+        move out of FOLLOWING; it can never cause a transition, only withhold
+        one.
         """
         now = self._clock() if now is None else now
         self._now = now
+        self._engagement_ready = engagement_ready
+        self._readiness_detail = readiness_detail
 
         # An accepted authorization is honoured before anything else, and
         # regardless of whether the target is visible on this frame.
@@ -291,12 +379,23 @@ class MissionStateMachine:
                 min(1.0, held / self.config.follow_time) if self.config.follow_time > 0 else 1.0
             )
             self._detail = f"Target locked. Following {self._target_id}."
-            if held >= self.config.follow_time:
+            if held < self.config.follow_time:
+                return
+
+            # The follow dwell is satisfied; the engagement preconditions are
+            # the second gate. Holding in FOLLOWING when the canister is not
+            # ready is the correct behaviour: the operator is never offered a
+            # control the system could not honour.
+            if not self._engagement_ready:
                 self._progress = 1.0
-                self._transition(
-                    MissionState.AWAITING_AUTHORIZATION,
-                    "Operator authorization required to proceed.",
-                )
+                self._detail = self._readiness_detail or "Engagement preconditions not met."
+                return
+
+            self._progress = 1.0
+            self._transition(
+                MissionState.AWAITING_AUTHORIZATION,
+                "Operator authorization required to proceed.",
+            )
             return
 
         if self._state is MissionState.AWAITING_AUTHORIZATION:
@@ -386,6 +485,7 @@ class MissionStateMachine:
         detail: str,
         *,
         kind: EventKind = EventKind.STATE,
+        code: EventCode | None = None,
         reason: str | None = None,
     ) -> None:
         if new_state is self._state:
@@ -395,8 +495,16 @@ class MissionStateMachine:
         self._state = new_state
         self._state_entered_at = self._now
         self._detail = detail
+        # The `A -> B: detail` shape is a documented part of the event log and
+        # is parsed by the end-to-end test; the structured `code` is the
+        # machine-readable half added alongside it, not a replacement.
         message = f"{previous.value} -> {new_state.value}: {detail}"
         if reason:
             message = f"{message} ({reason})"
-        self._emit(kind, message)
+        self._emit(
+            kind,
+            message,
+            code=code or _STATE_EVENT_CODE.get(new_state, EventCode.STATE_CHANGE),
+            target_id=self._target_id,
+        )
         log.info(message)

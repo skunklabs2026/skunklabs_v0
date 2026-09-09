@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { endpoints } from "../api";
-import { DetectorChoice } from "../components/setup/DetectorChoice";
+import { AdvancedPanel } from "../components/setup/AdvancedPanel";
 import { Dropzone } from "../components/setup/Dropzone";
 import { VerifyPanel } from "../components/setup/VerifyPanel";
 import { VideoLibrary } from "../components/setup/VideoLibrary";
+import { StatusDot } from "../components/common/Readout";
+import { UNKNOWN_SUBSYSTEM_STATES } from "../format";
 import { basename } from "../format";
 import { useSource } from "../hooks/useSource";
-import type { TelemetryFrame } from "../types";
+import type { Subsystem, TelemetryFrame } from "../types";
 
 interface Props {
   telemetry: TelemetryFrame | null;
@@ -14,13 +16,25 @@ interface Props {
   onBegin: () => void;
 }
 
+/** Subsystems worth confirming before a run. */
+const PREFLIGHT: readonly string[] = [
+  "SENSOR",
+  "PERCEPTION",
+  "TRACKER",
+  "COMPUTE",
+  "LAUNCHER",
+];
+
 /**
- * Mission setup — the screen the operator lands on.
+ * Canister setup — the screen the operator lands on.
  *
- * Three steps, in the order the work actually happens: load footage, pick a
- * detector, then confirm the system is seeing something before committing to
- * a run. BEGIN MISSION stays disabled until frames are genuinely flowing, so
- * nobody starts a mission against a dead source.
+ * Framed as bringing a canister online rather than configuring a model. Two
+ * steps: give the canister a sensor feed, then confirm the canister reports
+ * itself ready. Perception settings are one disclosure away, because they are
+ * how the canister sees, not what it does.
+ *
+ * BEGIN MISSION stays disabled until frames are genuinely flowing, so nobody
+ * starts a mission against a dead sensor.
  */
 export function SetupScreen({ telemetry, connected, onBegin }: Props) {
   const {
@@ -44,6 +58,7 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
 
   const system = telemetry?.system ?? null;
   const detection = telemetry?.detection ?? null;
+  const canister = telemetry?.canister ?? null;
   const live = Boolean(system?.sensor_online && (system?.frame_index ?? 0) > 0);
 
   // Telemetry is authoritative about what is actually running; the source
@@ -63,25 +78,41 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
   const frameWidth = system?.frame_width || 16;
   const frameHeight = system?.frame_height || 9;
 
+  const preflight: Subsystem[] = (canister?.subsystems ?? []).filter((s) =>
+    PREFLIGHT.includes(s.id),
+  );
+
   return (
     <div className="setup">
-      <header className="topbar">
-        <span className="wordmark">SkunkLabs</span>
-        <span className="canister">Canister 01 · Mission Setup</span>
+      <header className="topbar is-canister">
+        <div className="identity">
+          <span className="wordmark">SkunkLabs</span>
+          <span className="canister-id">
+            {canister?.canister_id ?? "Canister 01"}
+          </span>
+        </div>
+        <span className="setup-mode">Canister Setup</span>
         <div className="topbar-right">
           <div className="dot-row">
             <span className={`dot ${connected ? "is-ok" : "is-bad"}`} />
-            <span>{connected ? "Backend online" : "Connecting"}</span>
+            <span className="link-state">
+              {connected ? (canister?.state ?? "ONLINE") : "CONNECTING"}
+            </span>
           </div>
+          <span className="link-badge">LOCAL</span>
         </div>
       </header>
 
       <div className="setup-body">
-        {/* ---- 1. source ---- */}
+        {/* ---- 1. sensor feed ---- */}
         <section className="setup-col">
           <h2 className="setup-step">
-            <span className="step-num">1</span> Load footage
+            <span className="step-num">1</span> Sensor feed
           </h2>
+          <p className="setup-hint">
+            What CANISTER 01 is looking at. Load recorded footage, or attach the
+            live camera on this machine.
+          </p>
 
           <Dropzone
             onFile={(file) => void upload(file)}
@@ -97,7 +128,7 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
               disabled={busy}
               onClick={() => void selectCamera(0)}
             >
-              Use camera instead
+              Attach live camera
             </button>
           </div>
 
@@ -108,15 +139,8 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
             onSelect={(video) => void selectVideo(video)}
             onRemove={(name) => void removeUpload(name)}
           />
-        </section>
 
-        {/* ---- 2. detector, 3. verify ---- */}
-        <section className="setup-col">
-          <h2 className="setup-step">
-            <span className="step-num">2</span> Choose a detector
-          </h2>
-
-          <DetectorChoice
+          <AdvancedPanel
             available={status?.detectors_available ?? ["motion", "yolo"]}
             active={detector}
             threshold={threshold}
@@ -127,10 +151,41 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
               void setThreshold(value);
             }}
           />
+        </section>
 
+        {/* ---- 2. canister readiness ---- */}
+        <section className="setup-col">
           <h2 className="setup-step">
-            <span className="step-num">3</span> Confirm it is tracking
+            <span className="step-num">2</span> Confirm canister ready
           </h2>
+          <p className="setup-hint">
+            The canister reports on itself. Every subsystem below must be reporting
+            before a mission begins.
+          </p>
+
+          <div className="preflight">
+            {preflight.map((subsystem) => {
+              const tone = UNKNOWN_SUBSYSTEM_STATES.has(subsystem.state)
+                ? "unknown"
+                : subsystem.nominal
+                  ? "ok"
+                  : "bad";
+              return (
+                <div
+                  key={subsystem.id}
+                  className={`subsystem is-${tone}`}
+                  title={subsystem.detail}
+                >
+                  <StatusDot tone={tone} />
+                  <span className="subsystem-name">{subsystem.label}</span>
+                  <span className="subsystem-state">{subsystem.state}</span>
+                </div>
+              );
+            })}
+            {preflight.length === 0 && (
+              <div className="note">Waiting for canister telemetry…</div>
+            )}
+          </div>
 
           <div className="preview">
             {live ? (
@@ -141,12 +196,12 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
                 <img
                   className="preview-feed"
                   src={endpoints.videoStream()}
-                  alt="Source preview"
+                  alt="Sensor preview"
                 />
               </div>
             ) : (
               <div className="preview-empty">
-                {connected ? "Waiting for frames…" : "Backend offline"}
+                {connected ? "Waiting for sensor…" : "Canister offline"}
               </div>
             )}
           </div>
@@ -167,7 +222,7 @@ export function SetupScreen({ telemetry, connected, onBegin }: Props) {
             disabled={!live}
             onClick={onBegin}
           >
-            {live ? "Begin mission" : "Load a source to continue"}
+            {live ? "Begin mission" : "Attach a sensor feed to continue"}
           </button>
         </section>
       </div>

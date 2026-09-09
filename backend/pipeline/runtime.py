@@ -24,14 +24,20 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from backend.canister.status import CanisterInputs, CanisterStatusModel
 from backend.config.settings import Settings
+from backend.mission.recording import MissionRecorder
+from backend.mission.tactical import build_tactical_picture
 from backend.pipeline.engagement import EngagementStage
 from backend.pipeline.hub import TelemetryHub
 from backend.pipeline.inputs import InputController
 from backend.pipeline.perception import PerceptionStage
 from backend.schemas import (
+    CanisterStatus,
+    EventCode,
     EventKind,
     MissionEvent,
+    MissionState,
     SourceStatus,
     SystemStatus,
     TelemetryFrame,
@@ -64,11 +70,19 @@ class MissionPipeline:
         self.perception = PerceptionStage(settings)
         self.engagement = EngagementStage(settings, self.hub.emit)
 
+        # The canister's model of itself, and the record of what it did.
+        self.canister = CanisterStatusModel(canister_id=settings.canister_id)
+        self.recorder = MissionRecorder(settings.runs_dir, enabled=settings.record_runs)
+        self.hub.observe(self.recorder.record_event)
+
         # Loop bookkeeping.
         self._frame_index = 0
         self._fps = 0.0
         self._fps_samples: deque[float] = deque(maxlen=30)
         self._frame_size = (0, 0)  # (width, height)
+        # Last mission state written to the run report, so a transition is
+        # recorded once rather than on every frame that holds the state.
+        self._recorded_state: MissionState | None = None
 
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -100,7 +114,12 @@ class MissionPipeline:
         self._stop.clear()
         self._thread = threading.Thread(target=self._run, name="mission-pipeline", daemon=True)
         self._thread.start()
-        self.hub.emit(EventKind.INFO, "SkunkLabs V0 pipeline started.")
+        self._begin_run()
+        self.hub.emit(
+            EventKind.INFO,
+            f"{self.settings.canister_id} online. Sensor active, perception running.",
+            code=EventCode.SYSTEM_START,
+        )
         log.info(
             "Pipeline started: source=%s detector=%s",
             self.video.describe,
@@ -112,9 +131,21 @@ class MissionPipeline:
         if self._thread is not None:
             self._thread.join(timeout=5.0)
             self._thread = None
+        # Close the report before releasing the source, so a shutdown mid-run
+        # still leaves a usable record on disk.
+        self.recorder.finish(reason="shutdown")
         self.video.release()
         self.perception.close()
         log.info("Pipeline stopped")
+
+    def _begin_run(self) -> None:
+        """Open a mission report for the current source and detector."""
+        with self.hub.lock:
+            self.recorder.start(
+                source=self.video.describe,
+                detector=self.detector.name,
+            )
+            self._recorded_state = None
 
     # ------------------------------------------------------------------
     # Operator commands (API thread)
@@ -123,7 +154,19 @@ class MissionPipeline:
     def authorize(self) -> tuple[bool, str]:
         """Record operator authorization. Rejected unless the gate is open."""
         with self.hub.lock:
-            return self.engagement.authorize()
+            accepted, detail = self.engagement.authorize()
+            if accepted:
+                # Capture the readiness the operator authorized *against*, not
+                # merely that a button was pressed. This is the field-test
+                # question: what did the system claim when the decision was made.
+                self.recorder.record_authorization(
+                    self.engagement.readiness.state, time.time()
+                )
+            return accepted, detail
+
+    def readiness_state(self):
+        with self.hub.lock:
+            return self.engagement.readiness.state
 
     def reset(self) -> None:
         """Reset the mission so the sequence can be run again.
@@ -131,11 +174,21 @@ class MissionPipeline:
         Tracks and designations are cleared too, so a fresh run starts from
         UAV-001 rather than continuing to increment. The detector keeps its
         background model — the scene did not change.
+
+        A reset also closes the current mission report and opens a new one:
+        each run is a separate test, and merging two into one report loses the
+        boundary that makes them comparable.
         """
         with self.hub.lock:
             self.engagement.reset()
             self.perception.reset_tracks()
-        self.hub.emit(EventKind.INFO, "Mission reset. Ready for a new run.")
+        self.hub.emit(
+            EventKind.INFO,
+            "Mission reset. Ready for a new run.",
+            code=EventCode.MISSION_RESET,
+        )
+        self.recorder.finish(reason="reset")
+        self._begin_run()
 
     # ------------------------------------------------------------------
     # Input selection (API thread)
@@ -204,6 +257,7 @@ class MissionPipeline:
                     self.hub.emit(
                         EventKind.WARNING,
                         f"No frame from {self.video.describe}. Attempting to recover.",
+                        code=EventCode.SENSOR_LOST,
                     )
                 self._publish_offline()
                 # Back off so a dead source does not spin the CPU.
@@ -211,7 +265,11 @@ class MissionPipeline:
                 continue
 
             if consecutive_failures:
-                self.hub.emit(EventKind.INFO, f"Video restored from {self.video.describe}.")
+                self.hub.emit(
+                    EventKind.INFO,
+                    f"Video restored from {self.video.describe}.",
+                    code=EventCode.SENSOR_RESTORED,
+                )
                 consecutive_failures = 0
 
             # A rewind or reconnect breaks temporal continuity. Reset the
@@ -226,7 +284,11 @@ class MissionPipeline:
                 self._process_frame(frame)
             except Exception:  # pragma: no cover - defensive
                 log.exception("Pipeline failed processing a frame")
-                self.hub.emit(EventKind.ERROR, "Pipeline error while processing a frame.")
+                self.hub.emit(
+                    EventKind.ERROR,
+                    "Pipeline error while processing a frame.",
+                    code=EventCode.ERROR,
+                )
 
             elapsed = time.perf_counter() - loop_started
             if elapsed > 0:
@@ -238,6 +300,12 @@ class MissionPipeline:
         reason = self.inputs.apply_pending_source()
         if reason is not None:
             self._reset_scene(reason=reason)
+            # A new source is a new test. Close the report and open another,
+            # so two clips never share one record. Note this is deliberately
+            # *not* done on a video discontinuity: a looping demo clip rewinds
+            # constantly, and each rewind is not a separate run.
+            self.recorder.finish(reason="source changed")
+            self._begin_run()
 
         kind, detector_reason = self.inputs.take_pending_detector(self.detector)
         if kind is None:
@@ -273,9 +341,23 @@ class MissionPipeline:
         tracks = self.perception.process(frame, now)
 
         with self.hub.lock:
+            detection = self.perception.stats(
+                active_tracks=len(tracks), frames_processed=self._frame_index
+            )
+
+            # Canister health is computed before engagement, because the
+            # readiness gate is a function of it — a canister that is not
+            # operational must not offer an engagement.
+            canister = self._canister_status(
+                online=self.video.online, detection=detection, now=now
+            )
+            self.engagement.set_canister_health(canister.state, canister.detail)
+
             result = self.engagement.evaluate(
                 tracks, width=width, height=height, now=now, fps=self._fps
             )
+            self._record(result, detection, now)
+
             telemetry = TelemetryFrame(
                 timestamp=now,
                 system=self._system_status(
@@ -283,8 +365,12 @@ class MissionPipeline:
                 ),
                 mission=result.mission,
                 targets=result.targets,
-                detection=self.perception.stats(
-                    active_tracks=len(tracks), frames_processed=self._frame_index
+                detection=detection,
+                canister=canister,
+                readiness=result.readiness,
+                launcher=result.launcher,
+                tactical=build_tactical_picture(
+                    result.targets, camera_hfov_deg=self.settings.camera_hfov_deg
                 ),
                 intercept=result.intercept,
                 interceptor=result.interceptor,
@@ -297,20 +383,67 @@ class MissionPipeline:
 
     def _publish_offline(self) -> None:
         """Publish a telemetry frame reporting the sensor as offline."""
+        now = time.time()
         with self.hub.lock:
+            detection = self.perception.stats(
+                active_tracks=0, frames_processed=self._frame_index
+            )
             telemetry = TelemetryFrame(
-                timestamp=time.time(),
+                timestamp=now,
                 system=self._system_status(
                     online=False, width=self._frame_size[0], height=self._frame_size[1]
                 ),
                 mission=self.engagement.idle_status(),
                 targets=[],
-                detection=self.perception.stats(
-                    active_tracks=0, frames_processed=self._frame_index
+                detection=detection,
+                canister=self._canister_status(
+                    online=False, detection=detection, now=now
                 ),
+                readiness=self.engagement.readiness,
+                launcher=self.engagement.launcher_status(now),
                 events=self.hub.drain_pending(),
             )
         self.hub.publish(telemetry, None)
+
+    # ------------------------------------------------------------------
+    # Canister status and mission recording
+    # ------------------------------------------------------------------
+
+    def _canister_status(self, *, online: bool, detection, now: float) -> CanisterStatus:
+        return self.canister.build(
+            CanisterInputs(
+                sensor_online=online,
+                sensor_detail=self.video.describe,
+                detector_ready=self.detector.ready,
+                detector_name=self.detector.name,
+                tracker_active_tracks=detection.active_tracks,
+                fps=self._fps,
+                target_fps=self.settings.target_fps,
+                inference_ms=detection.latency_ms,
+                launcher_state=self.engagement.launcher_status(now).state,
+                launcher_simulated=self.engagement.actuator.simulated,
+                interceptor_active=self.engagement.interceptor.active,
+                uptime=self.canister.uptime(now),
+            )
+        )
+
+    def _record(self, result, detection, now: float) -> None:
+        """Feed the mission recorder. Never allowed to affect the mission."""
+        state = result.mission.state
+        if state is not self._recorded_state:
+            self.recorder.record_transition(state, result.mission.target_id, now)
+            self._recorded_state = state
+
+        launch = self.engagement.consume_launch_record()
+        if launch is not None:
+            self.recorder.record_launch(*launch)
+
+        self.recorder.record_frame_stats(
+            frames=self._frame_index,
+            detections_total=detection.detections_total,
+            fps=self._fps,
+            inference_ms=detection.latency_ms,
+        )
 
     def _system_status(self, *, online: bool, width: int, height: int) -> SystemStatus:
         return SystemStatus(

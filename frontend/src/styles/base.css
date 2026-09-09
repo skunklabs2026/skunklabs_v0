@@ -179,6 +179,14 @@ button {
   box-shadow: 0 0 6px var(--threat);
 }
 
+/* "Unknown" is not a shade of bad. A canister with no power monitor has
+   nothing to report; colouring that red trains an operator to ignore red. */
+.dot.is-unknown {
+  background: transparent;
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
 /* ---------------- buttons ---------------- */
 
 .ghost-button {

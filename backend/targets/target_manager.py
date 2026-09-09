@@ -52,6 +52,14 @@ class TargetManager:
         if self._primary_track_id == track_id:
             self._primary_track_id = None
 
+    def has_designation(self, track_id: int) -> bool:
+        """Whether this track has already been designated.
+
+        Lets the caller emit TRACK_CREATED exactly once per track, without
+        `designation_for` having to report whether it minted a new name.
+        """
+        return track_id in self._designations
+
     def designation_for(self, track_id: int, object_class: str | None = None) -> str:
         """Stable operator designation for a track ID, e.g. "UAV-001".
 

@@ -6,31 +6,73 @@ import time
 
 import pytest
 
+from backend.actuation.base import build_launch_command
 from backend.actuation.simulated import SimulatedActuator
-from backend.schemas import MissionState, TelemetryFrame
+from backend.schemas import (
+    LauncherState,
+    MissionState,
+    ReadinessState,
+    TelemetryFrame,
+)
 
 
-class TestSimulatedActuator:
-    def test_fire_reports_success(self):
+def _command(target_id: str | None = "UAV-001"):
+    return build_launch_command(
+        target_id=target_id,
+        mission_state=MissionState.AUTHORIZED,
+        readiness=ReadinessState.AUTHORIZED,
+        authorized_at=1_000.0,
+    )
+
+
+class TestLaunchCommandBoundary:
+    """The MissionController → LaunchCommand → ActuatorInterface seam."""
+
+    def test_command_is_acknowledged(self):
+        acknowledgement = SimulatedActuator().execute(_command())
+        assert acknowledgement.accepted
+        assert acknowledgement.actuator == "simulated"
+
+    def test_acknowledgement_carries_the_command_id(self):
+        """Correlating a command with its reply is the whole point of the seam."""
         actuator = SimulatedActuator()
-        result = actuator.fire("UAV-001")
-        assert result.ok
-        assert result.actuator == "simulated"
-        assert result.target_id == "UAV-001"
+        command = _command()
+        assert actuator.execute(command).command_id == command.command_id
 
-    def test_fire_is_counted(self):
+    def test_command_ids_are_unique(self):
+        assert _command().command_id != _command().command_id
+
+    def test_commands_are_counted(self):
         actuator = SimulatedActuator()
-        actuator.fire("UAV-001")
-        actuator.fire("UAV-002")
-        assert actuator.fire_count == 2
+        actuator.execute(_command("UAV-001"))
+        actuator.execute(_command("UAV-002"))
+        assert actuator.commands_issued == 2
+        assert actuator.status().commands_issued == 2
+
+    def test_launcher_state_transitions_and_returns_to_safe(self):
+        actuator = SimulatedActuator()
+        assert actuator.state is LauncherState.SAFE
+
+        actuator.execute(_command())
+        assert actuator.state is LauncherState.ACKNOWLEDGED
+
+        # A launcher stuck in ACKNOWLEDGED would misreport the canister as
+        # armed for the rest of the session.
+        actuator.update(actuator.status().last_acknowledged_at + 10.0)
+        assert actuator.state is LauncherState.SAFE
 
     def test_detail_states_no_physical_action(self):
-        """The safety posture must be explicit in the logged event."""
-        result = SimulatedActuator().fire("UAV-001")
-        assert "no physical action" in result.detail.lower()
+        """The safety posture must be explicit in the acknowledged event."""
+        detail = SimulatedActuator().execute(_command()).detail
+        assert "no physical action" in detail.lower()
+
+    def test_interface_reports_itself_as_simulated(self):
+        actuator = SimulatedActuator()
+        assert actuator.simulated is True
+        assert actuator.status().simulated is True
 
     def test_handles_missing_target(self):
-        assert SimulatedActuator().fire(None).ok
+        assert SimulatedActuator().execute(_command(None)).accepted
 
 
 class TestSchemas:

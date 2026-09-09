@@ -19,10 +19,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from backend.schemas import (  # noqa: E402
+    EventCode,
     EventKind,
     InterceptorPhase,
+    LauncherState,
+    MissionPhase,
     MissionState,
+    PhaseStatus,
     PlatformClass,
+    ReadinessState,
+    SubsystemId,
+    SubsystemState,
+    TacticalFrame,
+    TrackStability,
 )
 
 OUTPUT = REPO_ROOT / "frontend" / "src" / "types.ts"
@@ -142,6 +151,8 @@ export interface Target {
   trail: Point[];
   is_primary: boolean;
   trajectory: Trajectory | null;
+  /** Operator-facing, sensor-frame view of the extrapolation. */
+  projection: TrackProjection | null;
   platform: PlatformClass;
   platform_label: string;
   platform_features: PlatformFeatures | null;
@@ -181,12 +192,116 @@ export interface MissionStatus {
   detail: string;
   progress: number;
   state_since: number;
+  /** Derived on the backend — the UI renders it, it never computes one. */
+  phase: MissionPhase;
+  phases: PhaseProgress[];
+}
+
+export interface PhaseProgress {
+  phase: MissionPhase;
+  status: PhaseStatus;
+  progress: number;
 }
 
 export interface MissionEvent {
   timestamp: number;
   kind: EventKind;
   message: string;
+  code: EventCode;
+  target_id: string | null;
+}
+
+export interface Subsystem {
+  id: SubsystemId;
+  label: string;
+  state: SubsystemState;
+  detail: string;
+  /** True only when a real sensor produced this value. */
+  measured: boolean;
+  nominal: boolean;
+}
+
+export interface CanisterStatus {
+  canister_id: string;
+  state: SubsystemState;
+  detail: string;
+  uptime: number;
+  subsystems: Subsystem[];
+}
+
+export interface ReadinessCondition {
+  name: string;
+  met: boolean;
+  detail: string;
+}
+
+export interface EngagementReadiness {
+  state: ReadinessState;
+  conditions: ReadinessCondition[];
+  blocking: string[];
+  detail: string;
+}
+
+export interface LauncherStatus {
+  interface: string;
+  state: LauncherState;
+  simulated: boolean;
+  ready: boolean;
+  commands_issued: number;
+  last_command_id: string | null;
+  last_command_at: number | null;
+  last_acknowledged_at: number | null;
+  detail: string;
+}
+
+/**
+ * A sensor-frame extrapolation. NOT a range, a ground track, an impact
+ * prediction or a firing solution.
+ */
+export interface TrackProjection {
+  valid: boolean;
+  frame: "SENSOR_FRAME";
+  direction_deg: number | null;
+  direction_label: string;
+  stability: TrackStability;
+  horizon: number;
+  confidence: number;
+  points: TrajectoryPoint[];
+}
+
+export interface TacticalTrack {
+  target_id: string;
+  is_primary: boolean;
+  /** -1 (left frame edge) .. +1 (right edge); 0 is boresight. */
+  bearing_norm: number;
+  /** 0 (top of frame) .. 1 (bottom). */
+  elevation_norm: number;
+  apparent_size: number;
+  course_x: number;
+  course_y: number;
+  speed_norm: number;
+  bearing_available: boolean;
+  bearing_deg: number | null;
+  range_available: boolean;
+  range_m: number | null;
+  /** Projected path: future bearing (`x`) / elevation (`y`) pairs. */
+  path: Point[];
+  confidence: number;
+  platform: PlatformClass;
+  track_duration: number;
+  source: string;
+}
+
+export interface TacticalPicture {
+  frame: TacticalFrame;
+  frame_label: string;
+  fov_deg: number | null;
+  calibrated: boolean;
+  /** Confirmed tracks only. */
+  tracks: TacticalTrack[];
+  /** Detections held but not yet confirmed — counted, not plotted. */
+  candidates: number;
+  sources: string[];
 }
 
 export interface TelemetryFrame {
@@ -199,6 +314,10 @@ export interface TelemetryFrame {
   intercept: InterceptSolution | null;
   interceptor: InterceptorState | null;
   events: MissionEvent[];
+  canister: CanisterStatus;
+  readiness: EngagementReadiness;
+  launcher: LauncherStatus;
+  tactical: TacticalPicture;
 }
 
 export interface HistoryMessage {
@@ -212,6 +331,7 @@ export interface CommandResponse {
   ok: boolean;
   state: MissionState;
   detail: string;
+  readiness: ReadinessState;
 }
 """
 
@@ -227,9 +347,18 @@ def main() -> None:
         [
             HEADER,
             enum_block("MissionState", MissionState),
+            enum_block("MissionPhase", MissionPhase),
+            enum_block("PhaseStatus", PhaseStatus),
             enum_block("EventKind", EventKind),
+            enum_block("EventCode", EventCode),
             enum_block("InterceptorPhase", InterceptorPhase),
             enum_block("PlatformClass", PlatformClass),
+            enum_block("SubsystemId", SubsystemId),
+            enum_block("SubsystemState", SubsystemState),
+            enum_block("ReadinessState", ReadinessState),
+            enum_block("LauncherState", LauncherState),
+            enum_block("TrackStability", TrackStability),
+            enum_block("TacticalFrame", TacticalFrame),
             BODY.strip(),
             "",
         ]

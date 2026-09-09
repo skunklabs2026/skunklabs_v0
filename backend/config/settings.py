@@ -174,6 +174,23 @@ class Settings(BaseSettings):
         ".webm",
     )
 
+    # ---------------- Canister identity ----------------
+    # The deployed unit this console is operating. One canister per backend
+    # process in V0; the field exists so a second unit is a second process
+    # rather than a code change.
+    canister_id: str = "CANISTER 01"
+
+    # ---------------- Engagement readiness ----------------
+    # Minimum sensor-frame projection confidence before a track counts as
+    # stable enough to engage. Not a targeting quantity — it is a measure of
+    # how consistently the track is moving in the image.
+    readiness_min_track_stability: float = 0.25
+
+    # ---------------- Mission recording ----------------
+    # Every run is written out as a JSON report, so a demo doubles as a test.
+    record_runs: bool = True
+    runs_dir: Path = REPO_ROOT / "runs"
+
     # ---------------- Actuation ----------------
     # "simulated" — logs the event and emits it over the WebSocket. Safe.
     actuator: Literal["simulated"] = "simulated"
