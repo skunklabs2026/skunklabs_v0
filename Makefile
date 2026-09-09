@@ -4,9 +4,8 @@
 #
 # Every target is safe to re-run.
 
-SHELL   := /bin/bash
-VENV    := .venv
-PYTHON  := $(VENV)/bin/python
+SHELL    := /bin/bash
+VENV     := .venv
 FRONTEND := frontend
 
 .DEFAULT_GOAL := help
@@ -22,8 +21,8 @@ help: ## Show this help
 setup: setup-backend setup-frontend ## Install everything (first-run command)
 	@echo "Ready. Run: make demo"
 
-setup-backend: ## Create the venv and install backend + dev dependencies
-	uv venv $(VENV) --python 3.11
+setup-backend: ## Install backend + dev dependencies
+	@test -d $(VENV) || uv venv $(VENV) --python 3.11
 	uv pip install -e ".[dev]"
 
 setup-frontend: ## Install frontend dependencies
