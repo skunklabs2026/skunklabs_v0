@@ -95,7 +95,7 @@ class TestConditions:
         assert LAUNCHER_INTERFACE_READY in report.blocking
 
     def test_blocking_condition_is_named_in_the_detail(self, evaluator):
-        """"Not ready" must always say which condition failed."""
+        """ "Not ready" must always say which condition failed."""
         report = evaluator.evaluate(ready_inputs(launcher_ready=False))
         assert LAUNCHER_INTERFACE_READY in report.detail
 
@@ -108,9 +108,7 @@ class TestDerivedState:
 
     def test_launch_command_issued_is_terminal(self, evaluator):
         report = evaluator.evaluate(
-            ready_inputs(
-                mission_state=MissionState.ACTUATED, launch_command_issued=True
-            )
+            ready_inputs(mission_state=MissionState.ACTUATED, launch_command_issued=True)
         )
         assert report.state is ReadinessState.LAUNCH_COMMAND_ISSUED
 

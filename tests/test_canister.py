@@ -97,9 +97,7 @@ class TestCanisterStatus:
     def test_acknowledged_launcher_is_armed_but_nominal(self, model):
         launcher = next(
             s
-            for s in model.build(
-                healthy(launcher_state=LauncherState.ACKNOWLEDGED)
-            ).subsystems
+            for s in model.build(healthy(launcher_state=LauncherState.ACKNOWLEDGED)).subsystems
             if s.id is SubsystemId.LAUNCHER
         )
         assert launcher.state is SubsystemState.ARMED
@@ -187,7 +185,10 @@ class TestMissionRecording:
         ):
             recorder.record_event(
                 MissionEvent(
-                    timestamp=1_001.0, kind=kind, message=code.value, code=code,
+                    timestamp=1_001.0,
+                    kind=kind,
+                    message=code.value,
+                    code=code,
                     target_id="UAV-001",
                 )
             )
@@ -221,7 +222,7 @@ class TestMissionRecording:
         assert report["summary"]["acknowledgement_latency_ms"] == 12.0
         assert report["launch_command"]["command_id"] == command.command_id
         assert report["authorization"]["readiness_state"] == "READY_FOR_AUTHORIZATION"
-        assert [e["code"] for e in report["events"]][0] == "OBJECT_DETECTED"
+        assert next(e["code"] for e in report["events"]) == "OBJECT_DETECTED"
 
     def test_per_frame_chatter_is_not_recorded(self, recorder):
         """A report nobody reads is not a record."""
@@ -246,6 +247,4 @@ class TestMissionRecording:
         """The recorder must never fail a run because no report is open."""
         recorder.record_transition(MissionState.SEARCHING, None, 1_000.0)
         recorder.record_authorization(ReadinessState.AUTHORIZED, 1_000.0)
-        recorder.record_frame_stats(
-            frames=1, detections_total=0, fps=25.0, inference_ms=1.0
-        )
+        recorder.record_frame_stats(frames=1, detections_total=0, fps=25.0, inference_ms=1.0)

@@ -159,9 +159,7 @@ class MissionPipeline:
                 # Capture the readiness the operator authorized *against*, not
                 # merely that a button was pressed. This is the field-test
                 # question: what did the system claim when the decision was made.
-                self.recorder.record_authorization(
-                    self.engagement.readiness.state, time.time()
-                )
+                self.recorder.record_authorization(self.engagement.readiness.state, time.time())
             return accepted, detail
 
     def readiness_state(self):
@@ -396,9 +394,7 @@ class MissionPipeline:
                 mission=self.engagement.idle_status(),
                 targets=[],
                 detection=detection,
-                canister=self._canister_status(
-                    online=False, detection=detection, now=now
-                ),
+                canister=self._canister_status(online=False, detection=detection, now=now),
                 readiness=self.engagement.readiness,
                 launcher=self.engagement.launcher_status(now),
                 events=self.hub.drain_pending(),

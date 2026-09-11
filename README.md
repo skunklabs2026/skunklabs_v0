@@ -603,6 +603,16 @@ them at any window size without knowing the source resolution.
 
 ## Tests
 
+### Toolchain versions
+
+Both linters and the test runner are version-sensitive, and both had drifted:
+
+| Tool | Pinned in | Why it matters |
+| --- | --- | --- |
+| `ruff` | `pyproject.toml` `[dev]`, `.pre-commit-config.yaml`, `.github/workflows/ci.yml` | The lint config uses `RUF059`/`RUF046`/`UP042`, which only exist in ruff >= 0.11. An older ruff refuses to parse `pyproject.toml` at all. **Bump all three together.** |
+| `node` | `frontend/package.json` `engines`, `NODE_VERSION` in CI | `jsdom` pulls `undici`, which hard-requires a minimum Node. Above the floor it works; below it, `vitest` dies with `webidl.util.markAsUncloneable is not a function` before running a single test. |
+| `jsdom` | `frontend/package.json` (exact) | Pinned exactly rather than with `^`: a major bump silently raises the Node floor. |
+
 ### Testing Frameworks
 
 | Framework | Layer | Purpose | Manual Run Command |

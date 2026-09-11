@@ -67,9 +67,7 @@ def build_timeline(state: MissionState, progress: float) -> list[PhaseProgress]:
     steps: list[PhaseProgress] = []
     for position, phase in enumerate(PHASE_ORDER):
         if position <= complete_through:
-            steps.append(
-                PhaseProgress(phase=phase, status=PhaseStatus.COMPLETE, progress=1.0)
-            )
+            steps.append(PhaseProgress(phase=phase, status=PhaseStatus.COMPLETE, progress=1.0))
         elif position == index:
             steps.append(
                 PhaseProgress(
@@ -79,7 +77,5 @@ def build_timeline(state: MissionState, progress: float) -> list[PhaseProgress]:
                 )
             )
         else:
-            steps.append(
-                PhaseProgress(phase=phase, status=PhaseStatus.PENDING, progress=0.0)
-            )
+            steps.append(PhaseProgress(phase=phase, status=PhaseStatus.PENDING, progress=0.0))
     return steps

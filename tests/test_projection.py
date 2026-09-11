@@ -71,15 +71,18 @@ class TestTrackProjection:
         assert projection.direction_label == "—"
 
     def test_stability_bands(self):
-        assert build_track_projection(
-            trajectory(vx=0.5, confidence=0.9)
-        ).stability is TrackStability.STABLE
-        assert build_track_projection(
-            trajectory(vx=0.5, confidence=0.4)
-        ).stability is TrackStability.SETTLING
-        assert build_track_projection(
-            trajectory(vx=0.5, confidence=0.1)
-        ).stability is TrackStability.UNSTABLE
+        assert (
+            build_track_projection(trajectory(vx=0.5, confidence=0.9)).stability
+            is TrackStability.STABLE
+        )
+        assert (
+            build_track_projection(trajectory(vx=0.5, confidence=0.4)).stability
+            is TrackStability.SETTLING
+        )
+        assert (
+            build_track_projection(trajectory(vx=0.5, confidence=0.1)).stability
+            is TrackStability.UNSTABLE
+        )
 
     def test_the_frame_is_always_declared(self):
         assert build_track_projection(trajectory(vx=0.5)).frame == "SENSOR_FRAME"
@@ -133,9 +136,9 @@ class TestTacticalPicture:
         assert (track.course_x, track.course_y) == (0.0, 0.0)
 
     def test_course_is_a_unit_vector(self):
-        track = build_tactical_picture(
-            [target(trajectory=trajectory(vx=0.3, vy=-0.4))]
-        ).tracks[0]
+        track = build_tactical_picture([target(trajectory=trajectory(vx=0.3, vy=-0.4))]).tracks[
+            0
+        ]
         assert (track.course_x**2 + track.course_y**2) == pytest.approx(1.0)
         assert track.speed_norm == pytest.approx(0.5)
 
@@ -145,9 +148,7 @@ class TestTacticalPicture:
         assert picture.tracks[0].source in picture.sources
 
     def test_platform_defaults_to_unknown(self):
-        assert build_tactical_picture([target()]).tracks[0].platform is (
-            PlatformClass.UNKNOWN
-        )
+        assert build_tactical_picture([target()]).tracks[0].platform is (PlatformClass.UNKNOWN)
 
 
 class TestTacticalDeclutter:
@@ -212,9 +213,7 @@ class TestProjectedPath:
                 TrajectoryPoint(x=0.75, y=0.4, t=1.0),
             ],
         )
-        path = build_tactical_picture(
-            [target(projection=projected)]
-        ).tracks[0].path
+        path = build_tactical_picture([target(projection=projected)]).tracks[0].path
         assert [round(p.x, 3) for p in path] == [0.0, 0.5]
 
     def test_path_bearings_are_clamped_to_the_sector(self):
@@ -223,13 +222,13 @@ class TestProjectedPath:
             valid=True,
             points=[TrajectoryPoint(x=3.0, y=0.5, t=1.0)],
         )
-        path = build_tactical_picture(
-            [target(projection=projected)]
-        ).tracks[0].path
+        path = build_tactical_picture([target(projection=projected)]).tracks[0].path
         assert path[0].x == 1.0
 
     def test_invalid_projection_yields_no_path(self):
-        path = build_tactical_picture(
-            [target(projection=TrackProjection(valid=False))]
-        ).tracks[0].path
+        path = (
+            build_tactical_picture([target(projection=TrackProjection(valid=False))])
+            .tracks[0]
+            .path
+        )
         assert path == []

@@ -27,6 +27,7 @@ tsconfig.tsbuildinfo
 
 # Coverage
 .coverage
+frontend/coverage/
 htmlcov/
 
 # OS

@@ -1,4 +1,5 @@
 dist
+coverage
 node_modules
 # Generated from the backend Pydantic models by scripts/gen_types.py.
 src/types.ts

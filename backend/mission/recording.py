@@ -237,7 +237,9 @@ class MissionRecorder:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def start(self, *, source: str, detector: str, now: float | None = None) -> MissionRun | None:
+    def start(
+        self, *, source: str, detector: str, now: float | None = None
+    ) -> MissionRun | None:
         """Begin a new run, finishing any run still open."""
         if not self.enabled:
             return None
@@ -289,9 +291,7 @@ class MissionRecorder:
         elif event.code in (EventCode.WARNING, EventCode.ERROR):
             self._run.errors.append(event.message)
 
-    def record_transition(
-        self, state: MissionState, target_id: str | None, now: float
-    ) -> None:
+    def record_transition(self, state: MissionState, target_id: str | None, now: float) -> None:
         run = self._run
         if run is None:
             return

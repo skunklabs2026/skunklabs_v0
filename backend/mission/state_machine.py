@@ -59,6 +59,7 @@ _TRACKING_STATES = frozenset(
     }
 )
 
+
 class EventEmitter(Protocol):
     """How the machine reports to the operator.
 

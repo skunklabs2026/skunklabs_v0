@@ -200,9 +200,7 @@ class CanisterStatusModel:
             label="Interceptor",
             state=SubsystemState.STOWED,
             detail=(
-                "Simulated — release animation only"
-                if i.interceptor_simulated
-                else "Stowed"
+                "Simulated — release animation only" if i.interceptor_simulated else "Stowed"
             ),
             # No round is present and no bay sensor exists. Saying otherwise
             # would be the exact kind of invented telemetry this model exists

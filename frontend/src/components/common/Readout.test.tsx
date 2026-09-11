@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { Row, Dot, Meter } from "./Readout";
+import { Row, Dot, Meter, StatusDot } from "./Readout";
 
 describe("Row", () => {
   it("renders label and value", () => {
@@ -35,6 +35,32 @@ describe("Dot", () => {
     expect(screen.getByText("Disconnected")).toBeInTheDocument();
     const dot = document.querySelector(".dot");
     expect(dot).toHaveClass("is-bad");
+  });
+});
+
+describe("StatusDot", () => {
+  it.each([
+    ["ok", "is-ok"],
+    ["bad", "is-bad"],
+    ["unknown", "is-unknown"],
+  ] as const)("renders the %s tone", (tone, className) => {
+    render(<StatusDot tone={tone} />);
+    expect(document.querySelector(".dot")).toHaveClass(className);
+  });
+
+  it("gives 'unknown' its own tone rather than reusing 'bad'", () => {
+    // A canister subsystem with no sensor attached has nothing to report; it
+    // is not unhealthy. Colouring that as a fault trains an operator to
+    // ignore faults.
+    render(<StatusDot tone="unknown" />);
+    const dot = document.querySelector(".dot");
+    expect(dot).not.toHaveClass("is-bad");
+    expect(dot).not.toHaveClass("is-ok");
+  });
+
+  it("is hidden from assistive tech, since the label carries the meaning", () => {
+    render(<StatusDot tone="ok" />);
+    expect(document.querySelector(".dot")).toHaveAttribute("aria-hidden", "true");
   });
 });
 

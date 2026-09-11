@@ -168,9 +168,7 @@ class InputController:
         )
 
     def confirm_detector(self, name: str) -> None:
-        self._emit(
-            EventKind.INFO, f"Detector: {name}.", code=EventCode.SOURCE_CHANGED
-        )
+        self._emit(EventKind.INFO, f"Detector: {name}.", code=EventCode.SOURCE_CHANGED)
         log.info("Detector switched to %s", name)
 
     # ------------------------------------------------------------------

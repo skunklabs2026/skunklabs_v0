@@ -29,7 +29,7 @@ dev = [
     "pytest==8.3.4",
     "pytest-cov==6.0.0",
     "httpx==0.28.1",
-    "ruff==0.9.2",
+    "ruff==0.13.3",
     "pre-commit==4.0.1",
 ]
 
@@ -99,6 +99,10 @@ ignore = [
     "RUF007",
     "B905",
     # Unused unpacked variables are intentional in tuple unpacking patterns.
+    # NOTE: RUF059, RUF046 and UP042 below only exist in ruff >= 0.11. The
+    # pinned version in [project.optional-dependencies].dev, the
+    # .pre-commit-config.yaml rev and the CI job must stay in step with it —
+    # an older ruff refuses to parse this file at all.
     "RUF059",
     # Unnecessary int() calls in round() are kept for explicit type clarity.
     "RUF046",

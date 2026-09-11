@@ -161,9 +161,7 @@ class EngagementStage:
     ) -> EngagementResult:
         """Advance the mission by one frame."""
         primary = self.targets.select_primary(tracks)
-        designation = (
-            self._designate(primary) if primary is not None else None
-        )
+        designation = self._designate(primary) if primary is not None else None
 
         self._observe_for_classification(tracks, width=width, height=height, now=now)
 
@@ -352,8 +350,7 @@ class EngagementStage:
                 f"Launcher acknowledged {acknowledgement.command_id} in "
                 f"{acknowledgement.latency_ms:.0f} ms. {acknowledgement.detail}"
                 if acknowledgement.accepted
-                else f"Launcher REJECTED {acknowledgement.command_id}. "
-                f"{acknowledgement.detail}"
+                else f"Launcher REJECTED {acknowledgement.command_id}. {acknowledgement.detail}"
             ),
             code=(
                 EventCode.ACTUATOR_ACKNOWLEDGED
@@ -394,9 +391,7 @@ class EngagementStage:
             self.interceptor.reset()
             self._committed_intercept = None
 
-    def _annotate_primary(
-        self, targets: list[Target], primary, trajectory, projection
-    ) -> None:
+    def _annotate_primary(self, targets: list[Target], primary, trajectory, projection) -> None:
         """Attach projection, airframe and speed to the primary target only.
 
         A trajectory drawn per box would be unreadable.
