@@ -67,7 +67,7 @@ class TestCanisterStatus:
         assert status.state is SubsystemState.INITIALISING
 
     def test_unmeasured_subsystems_say_so(self, model):
-        """No power rail and no thermistor exist — the panel must not invent them."""
+        """No power rail and no thermistor exist - the panel must not invent them."""
         by_id = {s.id: s for s in model.build(healthy()).subsystems}
 
         power = by_id[SubsystemId.POWER]
@@ -132,7 +132,7 @@ class TestMissionTimeline:
         assert all(s.status is PhaseStatus.COMPLETE for s in steps)
 
     def test_target_lost_rewinds_to_search(self):
-        """A lost target is a setback, not a step — the timeline must not lie."""
+        """A lost target is a setback, not a step - the timeline must not lie."""
         steps = build_timeline(MissionState.TARGET_LOST, 0.0)
         assert steps[0].status is PhaseStatus.ACTIVE
         assert all(s.status is PhaseStatus.PENDING for s in steps[1:])

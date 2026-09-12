@@ -20,8 +20,8 @@ const CRITERIA_MET: ReadonlySet<MissionState> = new Set<MissionState>([
  * The target the canister is acting on.
  *
  * Six fields, in the order an operator asks for them: who, what, how sure,
- * how long, how solid, and does it meet the criteria. Everything else —
- * airframe kinematics, projection maths, detector internals — lives behind
+ * how long, how solid, and does it meet the criteria. Everything else -
+ * airframe kinematics, projection maths, detector internals - lives behind
  * DETAILS, because it is engineering information, not operational
  * information.
  */
@@ -33,7 +33,7 @@ export function TargetPanel({ primary, state }: Props) {
   // "Track" describes how solidly the track is held, which is a different
   // question from whether it exists: a target can be tracked but jittering.
   const trackQuality = !primary
-    ? "—"
+    ? "-"
     : !primary.tracking
       ? "TENTATIVE"
       : stability === "STABLE"
@@ -56,26 +56,26 @@ export function TargetPanel({ primary, state }: Props) {
       <div className="readout readout-spaced">
         <Row
           label="Class"
-          value={primary ? primary.class.toUpperCase() : "—"}
+          value={primary ? primary.class.toUpperCase() : "-"}
           muted={!primary}
         />
         <div>
           <Row
             label="Confidence"
-            value={primary ? `${confidence}%` : "—"}
+            value={primary ? `${confidence}%` : "-"}
             muted={!primary}
           />
           <Meter value={confidence / 100} />
         </div>
         <Row
           label="Track age"
-          value={primary ? `${primary.track_duration.toFixed(1)} s` : "—"}
+          value={primary ? `${primary.track_duration.toFixed(1)} s` : "-"}
           muted={!primary}
         />
         <Row label="Track" value={trackQuality} muted={!primary} />
         <Row
           label="Threat criteria"
-          value={primary ? (criteriaMet ? "MET" : "EVALUATING") : "—"}
+          value={primary ? (criteriaMet ? "MET" : "EVALUATING") : "-"}
           muted={!primary}
           title="Transparent V0 demo criteria: class, mean confidence and dwell time."
         />

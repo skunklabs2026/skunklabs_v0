@@ -3,7 +3,7 @@
 Runs the real video source, detector, tracker, rules and state machine over
 the configured clip with no server and no UI, and prints the state timeline.
 This is the fastest way to tell whether a demo will work before starting
-anything else — and the first thing to run if a demo misbehaves.
+anything else - and the first thing to run if a demo misbehaves.
 
 Usage:
     python scripts/verify_pipeline.py

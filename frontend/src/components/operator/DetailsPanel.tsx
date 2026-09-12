@@ -19,7 +19,7 @@ interface Props {
  * "Time to impact" and an inferred range used to sit on the main panel. They
  * are gone. Both are derived from an image-plane extrapolation with no camera
  * calibration behind it, so presenting them as seconds and metres was false
- * precision — they read as measurements and are not. What survives is the
+ * precision - they read as measurements and are not. What survives is the
  * TRACK PROJECTION: direction, stability, horizon and confidence, all stated
  * as sensor-frame quantities.
  */
@@ -53,9 +53,9 @@ export function DetailsPanel({ primary, system }: Props) {
             <div className="readout">
               <Row
                 label="Direction"
-                value={projection?.valid ? projection.direction_label : "—"}
+                value={projection?.valid ? projection.direction_label : "-"}
                 muted={!projection?.valid}
-                title="Direction of travel within the camera frame — not a compass bearing."
+                title="Direction of travel within the camera frame - not a compass bearing."
               />
               <Row
                 label="Stability"
@@ -67,17 +67,17 @@ export function DetailsPanel({ primary, system }: Props) {
               <Row
                 label="Horizon"
                 value={
-                  projection?.valid ? `${projection.horizon.toFixed(1)} s` : "—"
+                  projection?.valid ? `${projection.horizon.toFixed(1)} s` : "-"
                 }
                 muted={!projection?.valid}
-                title="Scaled by airframe class — a fixed-wing holds its course further."
+                title="Scaled by airframe class - a fixed-wing holds its course further."
               />
               <Row
                 label="Confidence"
                 value={
                   projection?.valid
                     ? `${Math.round(projection.confidence * 100)}%`
-                    : "—"
+                    : "-"
                 }
                 muted={!projection?.valid}
                 title="Quality of the motion fit, not a probability that anything will happen."
@@ -92,24 +92,24 @@ export function DetailsPanel({ primary, system }: Props) {
             <div className="readout">
               <Row
                 label="Class"
-                value={primary ? PLATFORM_LABEL[primary.platform] : "—"}
+                value={primary ? PLATFORM_LABEL[primary.platform] : "-"}
                 muted={!primary || primary.platform === "UNKNOWN"}
               />
               <Row
                 label="Straightness"
-                value={features ? features.straightness.toFixed(2) : "—"}
+                value={features ? features.straightness.toFixed(2) : "-"}
                 muted={!features}
               />
               <Row
                 label="Turn rate"
-                value={features ? `${features.turn_rate.toFixed(0)} °/s` : "—"}
+                value={features ? `${features.turn_rate.toFixed(0)} °/s` : "-"}
                 muted={!features}
               />
               <Row
                 label="Image rate"
-                value={features ? `${features.mean_speed.toFixed(2)} fw/s` : "—"}
+                value={features ? `${features.mean_speed.toFixed(2)} fw/s` : "-"}
                 muted={!features}
-                title="Frame widths per second — a direct measurement."
+                title="Frame widths per second - a direct measurement."
               />
               <Row
                 label="Speed"
@@ -132,22 +132,22 @@ export function DetailsPanel({ primary, system }: Props) {
             <div className="readout">
               <Row
                 label="Detector"
-                value={system?.detector ?? "—"}
+                value={system?.detector ?? "-"}
                 muted={!system}
               />
               <Row
                 label="Source"
-                value={system?.video_source ?? "—"}
+                value={system?.video_source ?? "-"}
                 muted={!system}
               />
               <Row
                 label="Rate"
-                value={system ? `${system.fps.toFixed(0)} fps` : "—"}
+                value={system ? `${system.fps.toFixed(0)} fps` : "-"}
                 muted={!system}
               />
               <Row
                 label="Frame"
-                value={system ? `${system.frame_index}` : "—"}
+                value={system ? `${system.frame_index}` : "-"}
                 muted={!system}
               />
             </div>

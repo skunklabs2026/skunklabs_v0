@@ -1,4 +1,4 @@
-"""Mission run recording — every demo is a test.
+"""Mission run recording - every demo is a test.
 
 Writes one JSON report per run to `runs/mission_YYYY_MM_DD_NNN.json`. No
 database: a run is a few hundred events, the consumer is a person or a short
@@ -13,7 +13,7 @@ the launcher take to acknowledge.
 
 The recorder is fed by the pipeline and never reaches back into it. It cannot
 affect mission behaviour, and a failure to write a report is logged and
-swallowed — losing a report must never interrupt a run.
+swallowed - losing a report must never interrupt a run.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from backend.schemas import (
 log = logging.getLogger(__name__)
 
 # Events worth keeping in a report. Per-frame chatter is deliberately excluded
-# — a report a person will not read is not a record.
+# - a report a person will not read is not a record.
 _RECORDED_CODES = frozenset(
     {
         EventCode.SYSTEM_START,
@@ -68,7 +68,7 @@ _RECORDED_CODES = frozenset(
 # Hard caps on report size.
 #
 # A demo clip left looping for an hour re-runs the whole sequence hundreds of
-# times, and an uncapped report grows without bound — the first version of
+# times, and an uncapped report grows without bound - the first version of
 # this produced a 388 KB file from a fifteen-minute session, which is not a
 # document anybody reads. The caps keep the *earliest* entries, because the
 # start of a run is what a field test is analysing; the tail is the clip

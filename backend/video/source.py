@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 class VideoSource(ABC):
     """A source of frames.
 
-    Implementations must be safe to `read()` even after a failure — they
+    Implementations must be safe to `read()` even after a failure - they
     should attempt recovery and report status rather than throwing.
     """
 
@@ -47,8 +47,8 @@ class VideoSource(ABC):
         """True once after the frame sequence jumps (a rewind, a reconnect).
 
         A discontinuity means the next frame has no temporal relationship to
-        the previous one, so any stateful downstream component — a background
-        model, a tracker — must be reset rather than fed a scene cut.
+        the previous one, so any stateful downstream component - a background
+        model, a tracker - must be reset rather than fed a scene cut.
         Defaults to False for sources that are always continuous.
         """
         return False

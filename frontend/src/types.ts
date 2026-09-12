@@ -1,4 +1,4 @@
-// GENERATED FILE — do not edit by hand.
+// GENERATED FILE - do not edit by hand.
 // Source of truth: backend/schemas.py
 // Regenerate with:  python scripts/gen_types.py
 
@@ -151,7 +151,7 @@ export interface PlatformFeatures {
 
 export interface SpeedEstimate {
   available: boolean;
-  /** Frame widths per second — always present, a direct measurement. */
+  /** Frame widths per second - always present, a direct measurement. */
   image_speed: number;
   range_m: number;
   speed_ms: number;
@@ -278,7 +278,7 @@ export interface MissionStatus {
   detail: string;
   progress: number;
   state_since: number;
-  /** Derived on the backend — the UI renders it, it never computes one. */
+  /** Derived on the backend - the UI renders it, it never computes one. */
   phase: MissionPhase;
   phases: PhaseProgress[];
 }
@@ -385,7 +385,7 @@ export interface TacticalPicture {
   calibrated: boolean;
   /** Confirmed tracks only. */
   tracks: TacticalTrack[];
-  /** Detections held but not yet confirmed — counted, not plotted. */
+  /** Detections held but not yet confirmed - counted, not plotted. */
   candidates: number;
   sources: string[];
 }

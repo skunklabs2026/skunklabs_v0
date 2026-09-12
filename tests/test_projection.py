@@ -68,7 +68,7 @@ class TestTrackProjection:
         """Fitting a heading to noise is exactly the false precision to avoid."""
         projection = build_track_projection(trajectory(vx=0.0001))
         assert projection.direction_deg is None
-        assert projection.direction_label == "—"
+        assert projection.direction_label == "-"
 
     def test_stability_bands(self):
         assert (
@@ -114,7 +114,7 @@ class TestTacticalPicture:
         """A field of view gives an angle, never a distance.
 
         Range would require an assumed airframe size stacked on a kinematic
-        classification — an inference, not a measurement, and it has no place
+        classification - an inference, not a measurement, and it has no place
         on a plot where it would read as one.
         """
         track = build_tactical_picture([target()], camera_hfov_deg=60.0).tracks[0]

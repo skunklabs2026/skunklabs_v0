@@ -81,7 +81,7 @@ export const CONDITION_LABEL: Record<string, string> = {
 /**
  * Whether a subsystem state should read as healthy.
  *
- * Only used for the *unknown* states, which are neither good nor bad —
+ * Only used for the *unknown* states, which are neither good nor bad -
  * everything else comes from the backend's own `nominal` flag, so the UI
  * never second-guesses which state is good for which subsystem.
  */
@@ -89,7 +89,7 @@ export const UNKNOWN_SUBSYSTEM_STATES: ReadonlySet<SubsystemState> =
   new Set<SubsystemState>(["N/A", "NOT CONNECTED", "NOT CALIBRATED"]);
 
 export const TRACK_STABILITY_LABEL: Record<TrackStability, string> = {
-  UNAVAILABLE: "—",
+  UNAVAILABLE: "-",
   UNSTABLE: "UNSTABLE",
   SETTLING: "SETTLING",
   STABLE: "STABLE",
@@ -103,7 +103,7 @@ export const PLATFORM_LABEL: Record<PlatformClass, string> = {
 };
 
 export function formatDuration(seconds: number): string {
-  if (!seconds) return "—";
+  if (!seconds) return "-";
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
   return m > 0 ? `${m}m ${String(s).padStart(2, "0")}s` : `${s}s`;

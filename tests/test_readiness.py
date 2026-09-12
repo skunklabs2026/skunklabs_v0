@@ -1,4 +1,4 @@
-"""Engagement readiness — the gate immediately upstream of the launcher."""
+"""Engagement readiness - the gate immediately upstream of the launcher."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def ready_inputs(**overrides) -> ReadinessInputs:
 
 class TestConditions:
     def test_every_condition_is_reported(self, evaluator):
-        """All six conditions appear whatever the verdict — the panel is fixed."""
+        """All six conditions appear whatever the verdict - the panel is fixed."""
         report = evaluator.evaluate(ready_inputs())
         assert [c.name for c in report.conditions] == list(CONDITION_ORDER)
 
@@ -85,7 +85,7 @@ class TestConditions:
         assert CANISTER_OPERATIONAL in report.blocking
 
     def test_degraded_canister_may_still_engage(self, evaluator):
-        """DEGRADED is a warning, not a stop — a slow frame rate is not a fault."""
+        """DEGRADED is a warning, not a stop - a slow frame rate is not a fault."""
         report = evaluator.evaluate(ready_inputs(canister_state=SubsystemState.DEGRADED))
         assert report.state is ReadinessState.READY_FOR_AUTHORIZATION
 

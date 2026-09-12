@@ -10,7 +10,7 @@ thread so that blocking OpenCV and inference calls never stall the asyncio
 event loop serving the API.
 
 Everything about this loop is written to fail soft. A detector exception, a
-dropped camera, or a corrupt frame degrades the demo — it does not stop it.
+dropped camera, or a corrupt frame degrades the demo - it does not stop it.
 """
 
 from __future__ import annotations
@@ -171,7 +171,7 @@ class MissionPipeline:
 
         Tracks and designations are cleared too, so a fresh run starts from
         UAV-001 rather than continuing to increment. The detector keeps its
-        background model — the scene did not change.
+        background model - the scene did not change.
 
         A reset also closes the current mission report and opens a new one:
         each run is a separate test, and merging two into one report loses the
@@ -239,7 +239,7 @@ class MissionPipeline:
         while not self._stop.is_set():
             loop_started = time.perf_counter()
 
-            # Apply queued input changes here, between frames — never while a
+            # Apply queued input changes here, between frames - never while a
             # read() is in flight.
             self._apply_pending_input()
 
@@ -272,11 +272,11 @@ class MissionPipeline:
 
             # A rewind or reconnect breaks temporal continuity. Reset the
             # scene-dependent stages so they do not interpret the jump as
-            # motion — otherwise every loop of the demo clip produces a burst
+            # motion - otherwise every loop of the demo clip produces a burst
             # of false targets.
             if self.video.consume_discontinuity():
                 self._reset_scene(reason="Video discontinuity")
-                log.info("Video discontinuity — perception state reset")
+                log.info("Video discontinuity - perception state reset")
 
             try:
                 self._process_frame(frame)
@@ -344,7 +344,7 @@ class MissionPipeline:
             )
 
             # Canister health is computed before engagement, because the
-            # readiness gate is a function of it — a canister that is not
+            # readiness gate is a function of it - a canister that is not
             # operational must not offer an engagement.
             canister = self._canister_status(
                 online=self.video.online, detection=detection, now=now

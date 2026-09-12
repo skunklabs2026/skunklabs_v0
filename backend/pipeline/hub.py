@@ -78,7 +78,7 @@ class TelemetryHub:
             # Held under the lock deliberately: the observer accumulates the
             # mission run, and `emit` is called from both the worker thread
             # and the API thread. The observer does in-memory bookkeeping
-            # only — no I/O — so this cannot stall the frame loop.
+            # only - no I/O - so this cannot stall the frame loop.
             if self._observer is not None:
                 self._observer(event)
         return event
@@ -101,7 +101,7 @@ class TelemetryHub:
     def publish(self, telemetry: TelemetryFrame, jpeg: bytes | None) -> None:
         """Store a new frame and wake every waiting client.
 
-        `jpeg` is already encoded by the caller — deliberately, so the
+        `jpeg` is already encoded by the caller - deliberately, so the
         several milliseconds of JPEG encoding happen off-lock and never
         block an API read.
         """

@@ -147,7 +147,7 @@ class TestSourceApi:
         assert response.status_code == 400
 
     def test_upload_rejects_undecodable_content(self, client):
-        """Right extension, junk bytes — must not become the active source."""
+        """Right extension, junk bytes - must not become the active source."""
         response = client.post(
             "/api/source/upload",
             files={"file": ("broken.mp4", b"not a video at all", "video/mp4")},

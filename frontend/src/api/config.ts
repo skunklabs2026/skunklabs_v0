@@ -4,7 +4,7 @@
  * Same-origin by default, which is what both supported deployments give us:
  * in development Vite proxies /api and /ws to the backend, and in production
  * the backend serves the built frontend itself. `VITE_API_BASE` is the escape
- * hatch for the third case — UI and API on different hosts — so that setup
+ * hatch for the third case - UI and API on different hosts - so that setup
  * needs an env var rather than a code change.
  */
 

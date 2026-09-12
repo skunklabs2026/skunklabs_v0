@@ -1,7 +1,7 @@
 """Mission state machine.
 
 The authoritative source of mission state. The UI renders what this produces
-and never derives state independently — that guarantee is what keeps the
+and never derives state independently - that guarantee is what keeps the
 operator screen and the backend from disagreeing.
 
 Nominal path:
@@ -26,7 +26,7 @@ Design rules this module enforces:
     operator commands). No randomness, no hidden inference.
   * Actuation is impossible without an explicit operator authorization. The
     machine will never move to AUTHORIZED on its own.
-  * Losing the target after AUTHORIZED does NOT cancel the engagement — the
+  * Losing the target after AUTHORIZED does NOT cancel the engagement - the
     operator's decision has already been taken and the actuation sequence
     completes. Cancelling mid-sequence would be a surprising behaviour to
     demonstrate.
@@ -64,7 +64,7 @@ class EventEmitter(Protocol):
     """How the machine reports to the operator.
 
     Structured: `code` is what a mission report filters on, `message` is what
-    a person reads. Both are always supplied — a transition that logs only
+    a person reads. Both are always supplied - a transition that logs only
     prose is invisible to field-test analysis.
     """
 
@@ -155,7 +155,7 @@ class MissionStateMachine:
         self._last_seen_at: float | None = None
 
         # The engagement-readiness gate, refreshed each frame by the caller.
-        # Defaults open so the machine remains usable — and unit-testable —
+        # Defaults open so the machine remains usable - and unit-testable -
         # without a readiness evaluator attached.
         self._engagement_ready = True
         self._readiness_detail = ""
@@ -215,7 +215,7 @@ class MissionStateMachine:
         """Record an operator authorization.
 
         Returns (accepted, detail). Rejected unless the mission is in
-        AWAITING_AUTHORIZATION — this is the hard interlock that makes it
+        AWAITING_AUTHORIZATION - this is the hard interlock that makes it
         impossible to actuate without having reached the authorization step.
         """
         if not self.can_authorize:
@@ -253,8 +253,8 @@ class MissionStateMachine:
         self._target_id = None
         self._progress = 0.0
         # Logged as a state change, not as MISSION_RESET. The machine resets
-        # itself for several reasons — an operator command, a video
-        # discontinuity, the auto-reset after actuation — and only the caller
+        # itself for several reasons - an operator command, a video
+        # discontinuity, the auto-reset after actuation - and only the caller
         # knows which. The caller emits the single MISSION_RESET; emitting one
         # here too would double every reset in the log and in the report.
         self._transition(
@@ -297,7 +297,7 @@ class MissionStateMachine:
         # The gate was open at the moment the operator acted, so the decision
         # stands. Without this ordering, a target leaving the frame in the
         # gap between the button press and the next frame sends the mission
-        # to TARGET_LOST and silently discards the authorization — the
+        # to TARGET_LOST and silently discards the authorization - the
         # operator sees "authorization received" and then nothing happens.
         if self._state is MissionState.AWAITING_AUTHORIZATION and self._authorization_requested:
             self._authorization_requested = False

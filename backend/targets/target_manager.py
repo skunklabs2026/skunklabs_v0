@@ -29,7 +29,7 @@ class TargetManager:
         self._counters: dict[str, int] = {}
         self._primary_track_id: int | None = None
         # Tracks that have already been engaged this session. They are never
-        # selected as primary again — see mark_engaged().
+        # selected as primary again - see mark_engaged().
         self._engaged: set[int] = set()
 
     def reset(self) -> None:
@@ -43,8 +43,8 @@ class TargetManager:
         """Retire a track from further engagement.
 
         Called once actuation completes. Without this the still-live track
-        instantly re-satisfies every dwell rule — it has been tracked for
-        many seconds by definition — and the mission snaps straight back to
+        instantly re-satisfies every dwell rule - it has been tracked for
+        many seconds by definition - and the mission snaps straight back to
         AWAITING_AUTHORIZATION on a target that was just engaged. Retiring
         the track means the demo re-arms only on a genuinely new acquisition.
         """
@@ -65,7 +65,7 @@ class TargetManager:
 
         The prefix comes from the detected class, so a generic detector
         running on arbitrary footage reports PERSON-001 and CAR-002 rather
-        than labelling everything UAV — which would be actively misleading.
+        than labelling everything UAV - which would be actively misleading.
 
         Assigned once and then frozen: a class label that flickers between
         frames must not renumber a target the operator is watching.

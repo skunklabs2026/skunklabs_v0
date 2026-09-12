@@ -1,5 +1,5 @@
 /* ============================================================
-   RESPONSIVE — tablet, phone, and touch
+   RESPONSIVE - tablet, phone, and touch
 
    The desktop layouts live with their screens (operator.css,
    setup.css). This file only carries the overrides that adapt
@@ -106,7 +106,7 @@
 }
 
 /* ------------------------------------------------------------
-   Tablet — the side panel drops below the video
+   Tablet - the side panel drops below the video
    ------------------------------------------------------------ */
 
 @media (max-width: 1100px) {
@@ -149,7 +149,7 @@
 }
 
 /* ------------------------------------------------------------
-   Compact — tabbed panel
+   Compact - tabbed panel
    ------------------------------------------------------------ */
 
 @media (max-width: 900px) {
@@ -240,7 +240,7 @@
 }
 
 /* ------------------------------------------------------------
-   Touch — coarse pointers need bigger targets than a mouse
+   Touch - coarse pointers need bigger targets than a mouse
 
    Keyed on the pointer, not the width: a large touchscreen still
    needs 44px targets, and a small desktop window does not.
@@ -270,7 +270,7 @@
 }
 
 /* ------------------------------------------------------------
-   Short viewports — a laptop in landscape has little height
+   Short viewports - a laptop in landscape has little height
    ------------------------------------------------------------ */
 
 @media (max-height: 560px) and (min-width: 900px) {

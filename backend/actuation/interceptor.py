@@ -11,7 +11,7 @@ It exists because a launch flash alone does not tell an operator anything:
 the useful information is *where* the interceptor was sent and *when* it
 arrives, which is what this makes visible.
 
-Flight profile is deliberately trivial — constant speed along a straight line
+Flight profile is deliberately trivial - constant speed along a straight line
 from the launch point to the aim point, with the aim point frozen at launch.
 Freezing it matters: re-aiming mid-flight would be a (crude) guidance
 behaviour, and V0 must not imply one. What is shown is a ballistic commit.
@@ -67,8 +67,8 @@ class InterceptorSimulation:
     ) -> InterceptSolution | None:
         """Commit a flight. Returns the solution actually flown.
 
-        If no feasible intercept exists the interceptor is still launched —
-        the operator authorized an engagement and must see it happen — but it
+        If no feasible intercept exists the interceptor is still launched -
+        the operator authorized an engagement and must see it happen - but it
         flies to the last predicted position and is reported as a miss rather
         than silently pretending to succeed.
         """

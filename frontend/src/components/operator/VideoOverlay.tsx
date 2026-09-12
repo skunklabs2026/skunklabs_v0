@@ -30,7 +30,7 @@ interface EngagementProps {
   state: MissionState;
 }
 
-/** Colour follows mission state — the same language as the banner. */
+/** Colour follows mission state - the same language as the banner. */
 function targetColor(target: Target, state: MissionState): string {
   if (!target.is_primary) return "var(--idle)";
   switch (state) {
@@ -67,7 +67,7 @@ export function VideoOverlay({ targets, state }: Props) {
 
         return (
           <g key={`${target.target_id}-${index}`}>
-            {/* trajectory tail — makes continuous tracking visible */}
+            {/* trajectory tail - makes continuous tracking visible */}
             {primary && target.trail.length > 1 && (
               <polyline
                 points={target.trail.map((p) => `${p.x},${p.y}`).join(" ")}
@@ -135,7 +135,7 @@ export function VideoOverlay({ targets, state }: Props) {
               </>
             )}
 
-            {/* predicted path — dashed, so it is never mistaken for the
+            {/* predicted path - dashed, so it is never mistaken for the
                 observed trail. Opacity tracks prediction confidence. */}
             {primary && target.trajectory?.valid && (
               <polyline
@@ -163,7 +163,7 @@ export function VideoOverlay({ targets, state }: Props) {
  * interceptor in flight.
  *
  * Kept separate from the target layer so it draws on top, and so the
- * distinction stays clear in code — targets are *observed*, this layer is
+ * distinction stays clear in code - targets are *observed*, this layer is
  * *predicted and simulated*.
  */
 export function EngagementOverlay({
@@ -265,7 +265,7 @@ export function EngagementOverlay({
  * Target labels, as an HTML layer rather than SVG text.
  *
  * The overlay's 0..1 viewBox uses `preserveAspectRatio="none"`, which scales
- * non-uniformly — fine for boxes and lines, but it would distort glyphs. So
+ * non-uniformly - fine for boxes and lines, but it would distort glyphs. So
  * labels live in their own layer positioned with percentages, where text
  * renders at a true, constant pixel size at any window dimension.
  */
@@ -273,8 +273,8 @@ export function TargetLabels({ targets, state }: Props) {
   // Only confirmed tracks are labelled. Unconfirmed ones all carry the
   // designation "UNCONFIRMED", so labelling them stacked several identical,
   // indistinguishable captions over the same corner of the frame and buried
-  // the target the mission is acting on. Their boxes are still drawn — seeing
-  // the detector working is useful — they simply do not get a caption.
+  // the target the mission is acting on. Their boxes are still drawn - seeing
+  // the detector working is useful - they simply do not get a caption.
   const labelled = targets.filter((target) => target.tracking);
 
   return (

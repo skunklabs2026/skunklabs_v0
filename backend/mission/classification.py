@@ -1,4 +1,4 @@
-"""Platform classification — FPV multirotor vs fixed-wing.
+"""Platform classification - FPV multirotor vs fixed-wing.
 
 Why this exists
 ---------------
@@ -7,7 +7,7 @@ makes both the predicted trajectory and the assessed speed wrong:
 
   MULTIROTOR (FPV quad)   Can hover, stop, reverse and turn on the spot.
                           Slow-to-moderate, highly variable speed. A long
-                          straight-line extrapolation is meaningless — it
+                          straight-line extrapolation is meaningless - it
                           may not be going that way in half a second.
 
   FIXED_WING (Shahed-type) Cannot hover or stop. Holds a near-constant high
@@ -16,8 +16,8 @@ makes both the predicted trajectory and the assessed speed wrong:
                           longer horizon.
 
 So the classification feeds two things: how far ahead we are willing to
-predict, and — because the two airframes are an order of magnitude apart in
-physical size — what absolute speed a given image-plane motion implies.
+predict, and - because the two airframes are an order of magnitude apart in
+physical size - what absolute speed a given image-plane motion implies.
 
 How it works
 ------------
@@ -33,7 +33,7 @@ computed over a rolling window of observed track positions:
                  physically cannot do this; a quad routinely does.
 
 Each feature votes, the votes are summed, and a decision requires both a
-clear margin and a run of consistent frames (hysteresis) — a classification
+clear margin and a run of consistent frames (hysteresis) - a classification
 that flickers between airframes every frame is worse than no classification.
 """
 
@@ -61,7 +61,7 @@ class PlatformProfile:
     # Multiplier applied to trajectory confidence, reflecting how much the
     # airframe can invalidate a straight-line extrapolation.
     confidence_scale: float
-    # Plausible speed band for the class, m/s — used only to label an
+    # Plausible speed band for the class, m/s - used only to label an
     # estimate as consistent or anomalous, never to override a measurement.
     typical_speed_ms: tuple[float, float]
 
@@ -205,7 +205,7 @@ class PlatformClassifier:
     ) -> list[tuple[float, float]]:
         """Headings over a multi-frame baseline, as (t, degrees).
 
-        Steps shorter than `min_step` are skipped — their direction is noise,
+        Steps shorter than `min_step` are skipped - their direction is noise,
         and a hovering target has no meaningful heading at all.
         """
         headings: list[tuple[float, float]] = []

@@ -13,7 +13,7 @@ strategy, which the V0 reference document recommends:
 Step 2 is the part that matters: when a drone becomes partially occluded or
 blurs on a fast pan, its detection confidence drops but it does not vanish.
 Recovering it from the low-confidence pool preserves the track ID instead of
-dropping the track and issuing a new ID — which would visibly break the
+dropping the track and issuing a new ID - which would visibly break the
 "same target" illusion the demo depends on.
 
 Motion is smoothed with a constant-velocity estimate rather than a full
@@ -68,7 +68,7 @@ class Track:
     confirmed: bool = False
     velocity: tuple[float, float] = (0.0, 0.0)
     trail: deque[tuple[float, float]] = field(default_factory=lambda: deque(maxlen=48))
-    # Rolling mean confidence — steadier for rule evaluation than the
+    # Rolling mean confidence - steadier for rule evaluation than the
     # instantaneous per-frame value, which is noisy.
     _confidence_history: deque[float] = field(default_factory=lambda: deque(maxlen=15))
 
@@ -194,7 +194,7 @@ class ByteTracker(Tracker):
         #
         # IoU is useless for a small, fast target: if the object moves further
         # than its own width between frames, consecutive boxes do not overlap
-        # at all, IoU is exactly 0, and the track breaks — the operator sees
+        # at all, IoU is exactly 0, and the track breaks - the operator sees
         # the ID jump every few frames on precisely the target that matters
         # most. Falling back to centre distance, gated by object size and the
         # track's own predicted motion, keeps the identity through fast
@@ -205,7 +205,7 @@ class ByteTracker(Tracker):
             unmatched_high = [d for d in unmatched_high if d in still_unmatched]
 
         # Any high-confidence detection that matched nothing starts a track.
-        # Low-confidence leftovers deliberately do not — that would let noise
+        # Low-confidence leftovers deliberately do not - that would let noise
         # spawn tracks.
         for detection in unmatched_high:
             self._spawn(detection, now)
@@ -284,7 +284,7 @@ class ByteTracker(Tracker):
                 if distance > gate:
                     continue
 
-                # Reject wildly mismatched sizes — a distant bird should not
+                # Reject wildly mismatched sizes - a distant bird should not
                 # capture the track of anearer target that happens to be nearby.
                 det_size = max(detection.width, detection.height)
                 if track_size > 0 and det_size > 0:

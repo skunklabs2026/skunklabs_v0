@@ -22,7 +22,7 @@ interface Props {
  * The sensor view and everything drawn on top of it.
  *
  * The inner `.frame` is locked to the source aspect ratio so the image fills
- * it exactly and the overlays — which use normalised coordinates — land on
+ * it exactly and the overlays - which use normalised coordinates - land on
  * the pixels they describe. Any letterboxing happens outside that box.
  */
 export function VideoStage({

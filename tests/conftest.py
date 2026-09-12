@@ -68,6 +68,24 @@ def machine(rule_engine, mission_config, clock) -> MissionStateMachine:
 
 
 @pytest.fixture
+def scenario_client(tmp_path, monkeypatch):
+    """A TestClient for the default V0 app: launcher scenario on, video pipeline off."""
+    from fastapi.testclient import TestClient
+
+    from backend.config.settings import get_settings
+
+    get_settings.cache_clear()
+    monkeypatch.setenv("SKUNK_VIDEO_PIPELINE_ENABLED", "false")
+    monkeypatch.setenv("SKUNK_RUNS_DIR", str(tmp_path / "runs"))
+
+    from backend.main import create_app
+
+    with TestClient(create_app()) as test_client:
+        yield test_client
+    get_settings.cache_clear()
+
+
+@pytest.fixture
 def client(tmp_path, monkeypatch):
     """A TestClient backed by the real pipeline over the demo clip.
 
@@ -86,6 +104,7 @@ def client(tmp_path, monkeypatch):
     library.mkdir()
 
     get_settings.cache_clear()
+    monkeypatch.setenv("SKUNK_VIDEO_PIPELINE_ENABLED", "true")
     monkeypatch.setenv("SKUNK_VIDEO_PATH", str(video))
     monkeypatch.setenv("SKUNK_TARGET_FPS", "60")
     monkeypatch.setenv("SKUNK_VIDEO_LIBRARY_DIR", str(library))

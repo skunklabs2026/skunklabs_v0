@@ -77,7 +77,7 @@ export function uploadVideo(
     };
 
     request.onerror = () =>
-      reject(new ApiError("Upload failed — is the backend running?", 0));
+      reject(new ApiError("Upload failed - is the backend running?", 0));
     request.onabort = () => reject(new ApiError("Upload cancelled.", 0));
 
     request.send(form);

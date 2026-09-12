@@ -3,7 +3,7 @@
 This module is the single source of truth for every payload that crosses the
 WebSocket or REST boundary. The TypeScript mirror in
 `frontend/src/types.ts` is generated from this file by `scripts/gen_types.py`
-— edit this module, then regenerate. Do not hand-edit the TypeScript.
+- edit this module, then regenerate. Do not hand-edit the TypeScript.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class MissionPhase(str, Enum):
     Coarser than `MissionState` on purpose. The state machine has states an
     operator does not need on a timeline (TARGET_LOST is a setback, not a
     step), so the timeline is a *projection* of mission state, derived on the
-    backend — see `backend.mission.timeline`. The frontend renders it and
+    backend - see `backend.mission.timeline`. The frontend renders it and
     never computes its own progression.
     """
 
@@ -87,13 +87,13 @@ class PlatformClass(str, Enum):
     """Airframe class inferred from track kinematics.
 
     Drives both how far ahead the trajectory is predicted and what absolute
-    speed a given image-plane motion implies — the two airframes differ by
+    speed a given image-plane motion implies - the two airframes differ by
     roughly an order of magnitude in size.
     """
 
     UNKNOWN = "UNKNOWN"
-    MULTIROTOR = "MULTIROTOR"  # FPV quad — can hover, turn on the spot
-    FIXED_WING = "FIXED_WING"  # Shahed-type — cannot hover, holds course
+    MULTIROTOR = "MULTIROTOR"  # FPV quad - can hover, turn on the spot
+    FIXED_WING = "FIXED_WING"  # Shahed-type - cannot hover, holds course
 
 
 class PlatformFeatures(BaseModel):
@@ -180,7 +180,7 @@ class InterceptSolution(BaseModel):
 class Target(BaseModel):
     """One tracked target as presented to the operator."""
 
-    target_id: str  # e.g. "UAV-001" — stable for the life of the track
+    target_id: str  # e.g. "UAV-001" - stable for the life of the track
     object_class: str = Field(serialization_alias="class")  # "uav"
     confidence: float
     bbox: BBox
@@ -209,7 +209,7 @@ class SystemStatus(BaseModel):
     fps: float
     frame_index: int
     # Source frame dimensions. The UI sizes the overlay box to this exact
-    # aspect ratio so normalised bboxes land on the right pixels — without
+    # aspect ratio so normalised bboxes land on the right pixels - without
     # it, letterboxing offsets every overlay from the object it marks.
     frame_width: int = 0
     frame_height: int = 0
@@ -226,7 +226,7 @@ class DetectionStats(BaseModel):
     """Evidence that the detector is actually working on the current source.
 
     This exists so an operator loading unfamiliar footage can confirm the
-    model is doing something before committing to a run — rather than staring
+    model is doing something before committing to a run - rather than staring
     at an empty frame and guessing whether the video, the detector, or the
     thresholds are at fault.
     """
@@ -426,7 +426,7 @@ class EngagementReadiness(BaseModel):
 
     This sits immediately upstream of the launcher boundary. Every condition
     is a pure function of state the operator can also see, and the blocking
-    ones are named — an operator is never told "not ready" without being told
+    ones are named - an operator is never told "not ready" without being told
     which condition failed.
     """
 
@@ -456,8 +456,8 @@ class LaunchCommand(BaseModel):
 
     This model *is* the hardware integration seam. A future validated
     launcher controller consumes exactly this and returns a
-    `LaunchAcknowledgement`; nothing upstream of it — perception, tracking,
-    mission logic or the UI — changes when that happens.
+    `LaunchAcknowledgement`; nothing upstream of it - perception, tracking,
+    mission logic or the UI - changes when that happens.
 
     >>> SAFETY <<< Issuing this in V0 produces a log entry, a telemetry
     event and an animation. It commands no physical device.
@@ -503,7 +503,7 @@ class LauncherStatus(BaseModel):
 
 
 # ======================================================================
-# Track projection (sensor frame — NOT a firing solution)
+# Track projection (sensor frame - NOT a firing solution)
 # ======================================================================
 
 
@@ -528,7 +528,7 @@ class TrackProjection(BaseModel):
     # Direction of travel within the frame, degrees clockwise from frame-up.
     # None when there is not enough motion to call one.
     direction_deg: float | None = None
-    direction_label: str = "—"
+    direction_label: str = "-"
     stability: TrackStability = TrackStability.UNAVAILABLE
     horizon: float = 0.0  # seconds the projection extends
     confidence: float = 0.0  # 0..1, from fit residual and history length
@@ -545,7 +545,7 @@ class TacticalFrame(str, Enum):
 
     V0 has exactly one: the sensor frame. The enum exists so that adding a
     geodetic source later is a new member and a new producer, not a rewrite
-    of the view — the view switches on this field.
+    of the view - the view switches on this field.
     """
 
     SENSOR_FRAME = "SENSOR_FRAME"
@@ -567,7 +567,7 @@ class TacticalTrack(BaseModel):
     bearing_norm: float = 0.0
     # 0 (top of frame) .. 1 (bottom of frame).
     elevation_norm: float = 0.0
-    # Apparent size as a fraction of frame width — a *relative* proximity
+    # Apparent size as a fraction of frame width - a *relative* proximity
     # cue, deliberately not converted into a distance.
     apparent_size: float = 0.0
     # Unit vector of travel in the sensor frame, for the track vector arrow.
@@ -605,11 +605,11 @@ class TacticalPicture(BaseModel):
 
     frame: TacticalFrame = TacticalFrame.SENSOR_FRAME
     frame_label: str = "LOCAL TRACK · RELATIVE COORDINATES · SENSOR FRAME"
-    # Sensor horizontal field of view, degrees — null unless configured, in
+    # Sensor horizontal field of view, degrees - null unless configured, in
     # which case the sector is drawn to scale rather than indicatively.
     fov_deg: float | None = None
     calibrated: bool = False
-    # Confirmed tracks only. Tentative detections are counted, not plotted —
+    # Confirmed tracks only. Tentative detections are counted, not plotted -
     # see `candidates`.
     tracks: list[TacticalTrack] = Field(default_factory=list)
     # How many detections the tracker is holding but has not yet confirmed.

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 /**
  * Track a CSS media query from React.
  *
- * Used where a layout change is structural rather than cosmetic — on a phone
+ * Used where a layout change is structural rather than cosmetic - on a phone
  * the side panel becomes tabs, which is a different component tree, not a
  * different stylesheet. Anything achievable in CSS alone should stay in CSS.
  */
@@ -42,7 +42,7 @@ export function useMediaQuery(query: string): boolean {
 export const BREAKPOINTS = {
   /** Below this the side panel stacks under the video and becomes tabbed. */
   compact: "(max-width: 900px)",
-  /** Coarse pointer — touch targets need to be bigger. */
+  /** Coarse pointer - touch targets need to be bigger. */
   touch: "(pointer: coarse)",
 } as const;
 

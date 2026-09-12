@@ -1,7 +1,9 @@
-"""Generate frontend/src/types.ts from backend/schemas.py.
+"""Generate the frontend's TypeScript API contracts from the backend models.
 
-Keeps one canonical API contract. `backend/schemas.py` is the source; this
-emits the TypeScript mirror. Run it after changing any schema:
+    backend/scenario/models.py  ->  frontend/src/scenario/contract.ts   (V0 launcher demo)
+    backend/schemas.py          ->  frontend/src/types.ts               (video sensor lab)
+
+Keeps one canonical API contract per surface. Run it after changing any schema:
 
     python scripts/gen_types.py
 
@@ -18,6 +20,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
+import types  # noqa: E402
+import typing  # noqa: E402
+from enum import Enum  # noqa: E402
+
+from pydantic import BaseModel  # noqa: E402
+
+from backend.scenario import models as scenario_models  # noqa: E402
 from backend.schemas import (  # noqa: E402
     EventCode,
     EventKind,
@@ -35,8 +44,60 @@ from backend.schemas import (  # noqa: E402
 )
 
 OUTPUT = REPO_ROOT / "frontend" / "src" / "types.ts"
+SCENARIO_OUTPUT = REPO_ROOT / "frontend" / "src" / "scenario" / "contract.ts"
 
-HEADER = """// GENERATED FILE — do not edit by hand.
+SCENARIO_HEADER = """// GENERATED FILE - do not edit by hand.
+// Source of truth: backend/scenario/models.py
+// Regenerate with:  python scripts/gen_types.py
+"""
+
+
+def _ts_type(annotation: object) -> str:
+    """TypeScript for one Pydantic field annotation."""
+    origin = typing.get_origin(annotation)
+    if origin in (typing.Union, types.UnionType):
+        return " | ".join(
+            "null" if arg is type(None) else _ts_type(arg)
+            for arg in typing.get_args(annotation)
+        )
+    if origin is list:
+        (item,) = typing.get_args(annotation)
+        inner = _ts_type(item)
+        return f"({inner})[]" if "|" in inner else f"{inner}[]"
+    if origin is typing.Literal:
+        return " | ".join(f'"{value}"' for value in typing.get_args(annotation))
+    if isinstance(annotation, type) and issubclass(annotation, (Enum, BaseModel)):
+        return annotation.__name__
+    primitives = {str: "string", int: "number", float: "number", bool: "boolean"}
+    if annotation in primitives:
+        return primitives[annotation]
+    raise TypeError(f"No TypeScript mapping for {annotation!r}")
+
+
+def interface_block(model: type[BaseModel]) -> str:
+    fields = "\n".join(
+        f"  {name}: {_ts_type(field.annotation)};" for name, field in model.model_fields.items()
+    )
+    return f"export interface {model.__name__} {{\n{fields}\n}}\n"
+
+
+def scenario_contract() -> str:
+    """Every enum and model in backend/scenario/models.py, in declaration order."""
+    members = [
+        value
+        for value in vars(scenario_models).values()
+        if isinstance(value, type)
+        and value.__module__ == scenario_models.__name__
+        and issubclass(value, (Enum, BaseModel))
+    ]
+    blocks = [
+        enum_block(m.__name__, m) if issubclass(m, Enum) else interface_block(m)
+        for m in members
+    ]
+    return "\n".join([SCENARIO_HEADER, *blocks])
+
+
+HEADER = """// GENERATED FILE - do not edit by hand.
 // Source of truth: backend/schemas.py
 // Regenerate with:  python scripts/gen_types.py
 """
@@ -65,7 +126,7 @@ export interface PlatformFeatures {
 
 export interface SpeedEstimate {
   available: boolean;
-  /** Frame widths per second — always present, a direct measurement. */
+  /** Frame widths per second - always present, a direct measurement. */
   image_speed: number;
   range_m: number;
   speed_ms: number;
@@ -192,7 +253,7 @@ export interface MissionStatus {
   detail: string;
   progress: number;
   state_since: number;
-  /** Derived on the backend — the UI renders it, it never computes one. */
+  /** Derived on the backend - the UI renders it, it never computes one. */
   phase: MissionPhase;
   phases: PhaseProgress[];
 }
@@ -299,7 +360,7 @@ export interface TacticalPicture {
   calibrated: boolean;
   /** Confirmed tracks only. */
   tracks: TacticalTrack[];
-  /** Detections held but not yet confirmed — counted, not plotted. */
+  /** Detections held but not yet confirmed - counted, not plotted. */
   candidates: number;
   sources: string[];
 }
@@ -365,6 +426,9 @@ def main() -> None:
     )
     OUTPUT.write_text(content, encoding="utf-8")
     print(f"Wrote {OUTPUT.relative_to(REPO_ROOT)}")
+
+    SCENARIO_OUTPUT.write_text(scenario_contract(), encoding="utf-8")
+    print(f"Wrote {SCENARIO_OUTPUT.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

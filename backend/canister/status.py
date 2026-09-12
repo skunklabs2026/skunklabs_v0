@@ -12,7 +12,7 @@ untrustworthy, which is a far worse trade than an empty field.
 
 Each subsystem is produced by a small reporter function taking a `CanisterInputs`
 snapshot. Attaching real hardware means replacing one reporter and setting
-`measured=True` — no other module changes, and the UI already renders the
+`measured=True` - no other module changes, and the UI already renders the
 difference between a measured value and a software-derived one.
 """
 
@@ -40,7 +40,7 @@ class CanisterInputs:
     detector_name: str = ""
     tracker_active_tracks: int = 0
     tracker_ready: bool = True
-    # Processing rate, and the rate we are aiming for — the compute health
+    # Processing rate, and the rate we are aiming for - the compute health
     # signal that actually matters for a real-time pipeline.
     fps: float = 0.0
     target_fps: float = 25.0
@@ -102,7 +102,7 @@ class CanisterStatusModel:
         )
 
     # ------------------------------------------------------------------
-    # Reporters — one per subsystem
+    # Reporters - one per subsystem
     # ------------------------------------------------------------------
 
     def _sensor(self, i: CanisterInputs) -> Subsystem:
@@ -170,7 +170,7 @@ class CanisterStatusModel:
 
     def _launcher(self, i: CanisterInputs) -> Subsystem:
         # SAFE is the nominal resting state, and stays nominal throughout the
-        # handshake — a launcher that has acknowledged a command is working
+        # handshake - a launcher that has acknowledged a command is working
         # correctly, not faulted.
         state = SubsystemState.SAFE
         if i.launcher_state is LauncherState.FAULT:
@@ -200,7 +200,7 @@ class CanisterStatusModel:
             label="Interceptor",
             state=SubsystemState.STOWED,
             detail=(
-                "Simulated — release animation only" if i.interceptor_simulated else "Stowed"
+                "Simulated - release animation only" if i.interceptor_simulated else "Stowed"
             ),
             # No round is present and no bay sensor exists. Saying otherwise
             # would be the exact kind of invented telemetry this model exists
@@ -237,7 +237,7 @@ class CanisterStatusModel:
     def _roll_up(subsystems: list[Subsystem]) -> tuple[SubsystemState, str]:
         """Reduce the subsystems to one headline state.
 
-        Only subsystems that are actually *reporting* can fail the roll-up —
+        Only subsystems that are actually *reporting* can fail the roll-up -
         an absent power monitor must never make the canister read DEGRADED,
         or the headline becomes permanently pessimistic and stops meaning
         anything.
@@ -250,7 +250,7 @@ class CanisterStatusModel:
         if offline is not None:
             return SubsystemState.OFFLINE, f"{offline.label} offline"
 
-        # A subsystem still coming up is not a fault — a canister that has
+        # A subsystem still coming up is not a fault - a canister that has
         # been powered on for two seconds should read INITIALISING, not
         # DEGRADED, or the headline cries wolf on every single start.
         if all(s.state is SubsystemState.INITIALISING for s in faults):

@@ -13,7 +13,7 @@ interface Props {
  * Power and temperature are deliberately included even though V0 can only
  * report NOT CONNECTED and N/A for them. Showing the empty slot is how the
  * panel stays honest about what a real canister would report and this one
- * cannot — hiding them would quietly imply the list is complete.
+ * cannot - hiding them would quietly imply the list is complete.
  */
 const SHOWN: readonly SubsystemId[] = [
   "SENSOR",
@@ -56,7 +56,7 @@ export function CanisterPanel({ canister, connected }: Props) {
         ))}
 
         {/* The operator's own link to the canister is not a canister
-            subsystem — it is the console reporting on itself, so it sits
+            subsystem - it is the console reporting on itself, so it sits
             below the list rather than inside it. */}
         <div className={`subsystem is-${connected ? "ok" : "bad"}`}>
           <StatusDot tone={connected ? "ok" : "bad"} />

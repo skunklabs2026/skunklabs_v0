@@ -1,7 +1,7 @@
 """Perception: pixels in, confirmed tracks out.
 
 One role: run the detector and the tracker, and report how well they are
-doing. This stage knows nothing about missions, targets or authorization —
+doing. This stage knows nothing about missions, targets or authorization -
 it turns a frame into a list of tracks and a health readout.
 
 The detector is swappable at runtime, so it is held as a mutable attribute
@@ -155,7 +155,7 @@ class PerceptionStage:
 
         Used for an operator mission reset. Resetting the detector too would
         discard the motion detector's learned background model and produce a
-        burst of false detections while it warms up again — on footage that
+        burst of false detections while it warms up again - on footage that
         never changed.
         """
         self.tracker.reset()
@@ -165,8 +165,8 @@ class PerceptionStage:
     def reset(self) -> None:
         """Clear all scene-dependent perception state, detector included.
 
-        Used when the scene itself changes — a new source, a new detector, or
-        a video discontinuity — where the old background model is genuinely
+        Used when the scene itself changes - a new source, a new detector, or
+        a video discontinuity - where the old background model is genuinely
         stale.
         """
         self.detector.reset()

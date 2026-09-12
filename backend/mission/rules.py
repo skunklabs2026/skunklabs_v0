@@ -5,8 +5,8 @@ confirmed target *for demonstration purposes*.
 
 >>> IMPORTANT SCOPE NOTE <<<
 This is demo logic. It is NOT a threat-identification capability and must not
-be described as one. It answers a narrow question — "has this track satisfied
-the pre-agreed demo criteria?" — using three transparent, configurable checks.
+be described as one. It answers a narrow question - "has this track satisfied
+the pre-agreed demo criteria?" - using three transparent, configurable checks.
 There is no inference, no model, and no LLM in this layer, by design: the V0
 reference document requires state transitions to be deterministic and
 inspectable.
@@ -67,7 +67,7 @@ class ConfidenceRule(Rule):
     """Mean track confidence must exceed a threshold.
 
     Uses the rolling mean rather than the instantaneous value so a single
-    noisy frame cannot trip — or untrip — confirmation.
+    noisy frame cannot trip - or untrip - confirmation.
     """
 
     name = "confidence"
@@ -118,7 +118,7 @@ class ConfirmationOutcome:
 
     confirmed: bool
     results: tuple[RuleResult, ...]
-    progress: float  # min progress across rules — the limiting criterion
+    progress: float  # min progress across rules - the limiting criterion
 
     @property
     def summary(self) -> str:

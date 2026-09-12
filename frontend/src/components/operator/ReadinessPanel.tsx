@@ -8,7 +8,7 @@ interface Props {
 }
 
 /**
- * Engagement readiness — the six preconditions and the state they derive.
+ * Engagement readiness - the six preconditions and the state they derive.
  *
  * Every condition is shown whatever the verdict, met or not. A checklist that
  * only lists failures gives an operator no way to tell "everything passed"
@@ -59,7 +59,7 @@ export function ReadinessPanel({ readiness, launcher }: Props) {
       )}
 
       {/* The command identifier is what correlates this engagement with a
-          launcher log — the field a hardware-in-the-loop test reads first. */}
+          launcher log - the field a hardware-in-the-loop test reads first. */}
       {launcher?.last_command_id && (
         <div className="launcher-command">CMD {launcher.last_command_id}</div>
       )}

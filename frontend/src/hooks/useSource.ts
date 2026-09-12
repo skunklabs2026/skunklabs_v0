@@ -5,7 +5,7 @@ import type { CommandResponse, SourceStatus, VideoInfo } from "../types";
 /**
  * Input selection: the library, uploads, and detector choice.
  *
- * Owns the *state* of choosing a source — what is selected, whether a change
+ * Owns the *state* of choosing a source - what is selected, whether a change
  * is in flight, what the backend said. The requests themselves live in
  * `api/source.ts`; this hook never builds a URL.
  *
@@ -39,7 +39,7 @@ export function useSource(): SourceControls {
   const [error, setError] = useState<string | null>(null);
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
 
-  // Guards every setState against a component that unmounted mid-request —
+  // Guards every setState against a component that unmounted mid-request -
   // the operator can leave the setup screen while an upload is still running.
   const alive = useRef(true);
   const settleTimer = useRef<number | null>(null);

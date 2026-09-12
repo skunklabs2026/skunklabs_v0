@@ -18,7 +18,7 @@ interface Props {
  *   18:40:19  ACTUATOR_ACKNOWLEDGED    UAV-001
  *
  * That is a deliberate change from showing the sentence. A column of codes
- * scans as a sequence of events — which is what an operator watching a run
+ * scans as a sequence of events - which is what an operator watching a run
  * and an engineer reading a mission report both need. The prose is still
  * there, on hover, for when the code is not enough.
  */
@@ -27,7 +27,7 @@ export function EventLog({ events }: Props) {
   const pinnedRef = useRef(true);
 
   // Follow the tail, but stop auto-scrolling if the operator has scrolled up
-  // to read something — yanking the view away mid-read is hostile.
+  // to read something - yanking the view away mid-read is hostile.
   useEffect(() => {
     const node = scrollRef.current;
     if (node && pinnedRef.current) {

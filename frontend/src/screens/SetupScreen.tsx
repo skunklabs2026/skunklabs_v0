@@ -26,7 +26,7 @@ const PREFLIGHT: readonly string[] = [
 ];
 
 /**
- * Canister setup — the screen the operator lands on.
+ * Canister setup - the screen the operator lands on.
  *
  * Framed as bringing a canister online rather than configuring a model. Two
  * steps: give the canister a sensor feed, then confirm the canister reports

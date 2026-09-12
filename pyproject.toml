@@ -66,7 +66,7 @@ exclude_lines = [
 ]
 
 # ---------------------------------------------------------------------------
-# Lint / format — one tool, so "is this formatted right?" is never a debate
+# Lint / format - one tool, so "is this formatted right?" is never a debate
 # in review.
 # ---------------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ ignore = [
     # Unused unpacked variables are intentional in tuple unpacking patterns.
     # NOTE: RUF059, RUF046 and UP042 below only exist in ruff >= 0.11. The
     # pinned version in [project.optional-dependencies].dev, the
-    # .pre-commit-config.yaml rev and the CI job must stay in step with it —
+    # .pre-commit-config.yaml rev and the CI job must stay in step with it -
     # an older ruff refuses to parse this file at all.
     "RUF059",
     # Unnecessary int() calls in round() are kept for explicit type clarity.

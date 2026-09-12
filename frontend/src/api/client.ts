@@ -4,7 +4,7 @@
  * One job: turn a request into either parsed data or an `ApiError` carrying
  * a message worth showing an operator. The backend answers failures with
  * `{"detail": "..."}` written for exactly that purpose, so the client's main
- * responsibility is not to lose it — a bare "Request failed (400)" in front
+ * responsibility is not to lose it - a bare "Request failed (400)" in front
  * of someone mid-demo is a bug, not an error message.
  */
 

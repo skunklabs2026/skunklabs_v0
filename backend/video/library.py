@@ -177,7 +177,7 @@ class VideoLibrary:
         """A safe destination inside the upload directory.
 
         The client controls this filename, so it is stripped to a basename and
-        sanitised — a name like "../../etc/passwd.mp4" must never escape the
+        sanitised - a name like "../../etc/passwd.mp4" must never escape the
         upload directory.
         """
         base = Path(filename or "upload.mp4").name

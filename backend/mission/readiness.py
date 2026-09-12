@@ -1,4 +1,4 @@
-"""Engagement readiness — the gate immediately upstream of the launcher.
+"""Engagement readiness - the gate immediately upstream of the launcher.
 
 This is the layer that answers one question, and only that question:
 
@@ -8,8 +8,8 @@ This is the layer that answers one question, and only that question:
 It is deliberately separate from the mission state machine. The state machine
 knows how a mission *progresses*; readiness knows whether the machine and the
 hardware around it are *fit* to proceed. Keeping them apart is what lets a
-future canister add a real precondition — launcher continuity, interceptor
-present, safety interlock closed — by appending a condition here, without
+future canister add a real precondition - launcher continuity, interceptor
+present, safety interlock closed - by appending a condition here, without
 touching mission logic, perception or the UI.
 
 Design rules:
@@ -73,7 +73,7 @@ class ReadinessInputs:
     """Everything the evaluator is allowed to look at.
 
     Passed as one frozen record rather than eight arguments so that adding a
-    real hardware precondition later is a field here and a condition below —
+    real hardware precondition later is a field here and a condition below -
     and every caller keeps compiling.
     """
 
@@ -103,7 +103,7 @@ class EngagementReadinessEvaluator:
 
     def __init__(self, *, min_track_stability: float = 0.25) -> None:
         # Below this projection confidence the track is moving too erratically
-        # — or has too little history — to call stable. It is a display-derived
+        # - or has too little history - to call stable. It is a display-derived
         # quality signal, not a targeting quantity.
         self.min_track_stability = min_track_stability
 
@@ -133,7 +133,7 @@ class EngagementReadinessEvaluator:
     def _target_valid(self, i: ReadinessInputs) -> ReadinessCondition:
         """A designated target exists and has satisfied the demo criteria.
 
-        After authorization the target may legitimately have left the frame —
+        After authorization the target may legitimately have left the frame -
         the engagement was committed while it was valid, and re-testing here
         would retroactively invalidate a decision already taken.
         """
@@ -211,7 +211,7 @@ class EngagementReadinessEvaluator:
     def _authorization_valid(self, i: ReadinessInputs) -> ReadinessCondition:
         """Whether a valid operator authorization has been recorded.
 
-        Unmet before the operator acts — which is correct and expected, not a
+        Unmet before the operator acts - which is correct and expected, not a
         fault. Its purpose is to make the authorization an explicit, logged
         precondition of the launch command rather than an implicit one.
         """
@@ -267,7 +267,7 @@ class EngagementReadinessEvaluator:
             if name == AUTHORIZATION_VALID:
                 continue
             if name in blocking:
-                return f"Not ready — {name}: {by_name[name].detail}."
+                return f"Not ready - {name}: {by_name[name].detail}."
         return "Not ready."
 
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   SKUNKLABS — DESIGN TOKENS
+   SKUNKLABS - DESIGN TOKENS
 
    Brand knobs mirror skunklabs_website/app/styles/theme.css so
    the operator console and the public site read as one product.
@@ -8,7 +8,7 @@
 
 :root {
   /* ---------- BRAND ---------- */
-  --brand-accent: #e07f34; /* orange — labels, highlights, hovers */
+  --brand-accent: #e07f34; /* orange - labels, highlights, hovers */
   --brand-bg: #0a0a0b; /* near-black background              */
   --brand-text: #f4f1ea; /* warm off-white foreground          */
 
@@ -40,18 +40,18 @@
 
   /* ---------- TYPOGRAPHY ----------
      Inter and IBM Plex Mono are the site's faces, installed as local
-     @fontsource packages rather than fetched from Google — the console
+     @fontsource packages rather than fetched from Google - the console
      must render identically with no network. */
   --font-body:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-label: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Type scale — one place to adjust density. */
-  --fs-micro: 0.625rem; /* 10px — chips, meta */
-  --fs-label: 0.6875rem; /* 11px — field labels */
-  --fs-body: 0.8125rem; /* 13px — prose */
-  --fs-value: 0.9375rem; /* 15px — readout values */
-  --fs-title: 1.125rem; /* 18px — card headings */
+  /* Type scale - one place to adjust density. */
+  --fs-micro: 0.625rem; /* 10px - chips, meta */
+  --fs-label: 0.6875rem; /* 11px - field labels */
+  --fs-body: 0.8125rem; /* 13px - prose */
+  --fs-value: 0.9375rem; /* 15px - readout values */
+  --fs-title: 1.125rem; /* 18px - card headings */
 
   /* Tracking for uppercase mono labels. */
   --track-label: 0.16em;

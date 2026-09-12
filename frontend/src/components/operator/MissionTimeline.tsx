@@ -11,7 +11,7 @@ interface Props {
  *   SEARCH → DETECT → TRACK → CONFIRM → FOLLOW → AUTHORIZE → LAUNCH
  *
  * The steps arrive fully resolved in `mission.phases`, computed by the
- * backend state machine. This component decides nothing about progression —
+ * backend state machine. This component decides nothing about progression -
  * it draws what it is given. That is the whole reason the timeline lives in
  * the telemetry contract rather than being derived from `mission.state` here:
  * two independent state machines would eventually disagree, on screen, in

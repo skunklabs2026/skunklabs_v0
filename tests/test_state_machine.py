@@ -1,6 +1,6 @@
 """Mission state machine tests.
 
-These cover the transitions the demo depends on, and — more importantly —
+These cover the transitions the demo depends on, and - more importantly -
 the safety interlocks: actuation must be impossible without an explicit
 operator authorization taken at the right moment.
 """
@@ -204,7 +204,7 @@ class TestAuthorizationInterlock:
     def test_authorization_survives_immediate_target_loss(self, machine, clock):
         """Regression: an accepted authorization must not be discarded.
 
-        Observed in a live demo — the operator pressed AUTHORIZE just as the
+        Observed in a live demo - the operator pressed AUTHORIZE just as the
         target left the frame. The authorization was accepted, then the very
         next update saw no target, went to TARGET_LOST, and silently dropped
         the pending authorization. The gate was open when the operator acted,

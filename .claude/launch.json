@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "backend.main"],
+      "port": 8000
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "app-built",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["SKUNK_PORT=8001", ".venv/bin/python", "-m", "backend.main"],
+      "port": 8001
+    }
+  ]
+}

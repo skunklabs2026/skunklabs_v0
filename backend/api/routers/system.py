@@ -6,26 +6,33 @@ a monitoring check can read the same values without opening a socket.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
-from backend.api.deps import PipelineDep
+from backend.api.deps import PipelineDep, ScenarioDep
 from backend.schemas import MissionEvent, TelemetryFrame
 
 router = APIRouter(tags=["system"])
 
 
 @router.get("/api/health")
-async def health(pipeline: PipelineDep) -> dict:
+async def health(request: Request, scenario: ScenarioDep) -> dict:
     """Liveness plus enough detail to debug a failed demo start."""
-    telemetry = pipeline.snapshot()
-    return {
+    body: dict = {
         "ok": True,
-        "detector": pipeline.detector.name,
-        "detector_ready": pipeline.detector.ready,
-        "video_source": pipeline.video.describe,
-        "sensor_online": pipeline.video.online,
-        "state": telemetry.mission.state.value if telemetry else "STARTING",
+        "mission_state": scenario.snapshot.state.value,
+        "video_pipeline": request.app.state.pipeline is not None,
     }
+    pipeline = request.app.state.pipeline
+    if pipeline is not None:
+        telemetry = pipeline.snapshot()
+        body.update(
+            detector=pipeline.detector.name,
+            detector_ready=pipeline.detector.ready,
+            video_source=pipeline.video.describe,
+            sensor_online=pipeline.video.online,
+            state=telemetry.mission.state.value if telemetry else "STARTING",
+        )
+    return body
 
 
 @router.get("/api/telemetry", response_model=TelemetryFrame | None)

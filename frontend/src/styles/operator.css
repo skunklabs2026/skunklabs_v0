@@ -1,5 +1,5 @@
 /* ============================================================
-   OPERATOR CONSOLE — the live mission screen
+   OPERATOR CONSOLE - the live mission screen
    ============================================================ */
 
 .shell {
@@ -88,7 +88,7 @@
   color: var(--threat);
 }
 
-/* corner registration marks — reads as an instrument, not a web player */
+/* corner registration marks - reads as an instrument, not a web player */
 .corner {
   position: absolute;
   width: 16px;
@@ -267,7 +267,7 @@
   min-height: 130px;
 }
 
-/* target designation — the number the operator actually reads */
+/* target designation - the number the operator actually reads */
 .target-id {
   font-family: var(--font-label);
   font-size: 1.5rem;
@@ -314,7 +314,7 @@
 
 .log-entry {
   display: grid;
-  /* time | code | target — three columns, so codes align into a scannable
+  /* time | code | target - three columns, so codes align into a scannable
      column rather than ragging against a variable-length sentence. */
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.6rem;
@@ -426,7 +426,7 @@
 }
 
 /* ============================================================
-   OPERATIONAL CANISTER — identity, sequence, views, readiness
+   OPERATIONAL CANISTER - identity, sequence, views, readiness
 
    Added for the operational V0. Everything here derives from the
    existing tokens; no new colours, no new type faces.

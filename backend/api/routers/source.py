@@ -2,7 +2,7 @@
 
 These routes validate and translate. The filesystem work belongs to
 `VideoLibrary`, and applying a change belongs to the pipeline's worker
-thread — this module only maps their outcomes onto HTTP status codes.
+thread - this module only maps their outcomes onto HTTP status codes.
 """
 
 from __future__ import annotations

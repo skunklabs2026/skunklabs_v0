@@ -2,7 +2,7 @@
 
 A single uncalibrated camera cannot measure speed. What it *can* do is
 measure angular rate, and angular rate becomes a speed once you know the
-range. Range, in turn, follows from how large the target appears — but only
+range. Range, in turn, follows from how large the target appears - but only
 if you assume how large it actually is.
 
 That assumption is exactly what the platform classification supplies:
@@ -110,7 +110,7 @@ class SpeedEstimator:
             f"at {self.camera_hfov_deg:.0f}° HFOV. Cross-range only."
         )
         if not plausible:
-            base.detail += f" Outside typical {low:.0f}–{high:.0f} m/s for this class."
+            base.detail += f" Outside typical {low:.0f}-{high:.0f} m/s for this class."
         return base
 
 

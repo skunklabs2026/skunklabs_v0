@@ -1,0 +1,1889 @@
+/* ============================================================
+   V0 CONSOLE - map view and launcher view
+
+   Every class is `c-` prefixed. The legacy sensor lab's stylesheets
+   load lazily into the same document and use generic names
+   (.panel, .timeline, .stage …); the prefix keeps the two apart.
+   ============================================================ */
+
+:root {
+  --c-bg: #05090f;
+  --c-surface: #0a1119;
+  --c-surface-2: #0d1520;
+  --c-raise: #121c29;
+  --c-line: #182433;
+  --c-line-strong: #253549;
+
+  --c-text: #e2e9f0;
+  --c-text-dim: #93a1b1;
+  --c-text-faint: #5f6d7d;
+
+  /* Status families - see scenario/format.ts STATE_TONE. */
+  --c-neutral: #8190a0;
+  --c-info: #5aa9ff;
+  --c-active: #e9b44c;
+  --c-ready: #37d483;
+  --c-armed: #5aa9ff;
+  --c-alert: #ff5a52;
+
+  --c-radius: 4px;
+}
+
+.c-tone-neutral {
+  --tone: var(--c-neutral);
+}
+.c-tone-info {
+  --tone: var(--c-info);
+}
+.c-tone-active {
+  --tone: var(--c-active);
+}
+.c-tone-ready {
+  --tone: var(--c-ready);
+}
+.c-tone-armed {
+  --tone: var(--c-armed);
+}
+.c-tone-alert {
+  --tone: var(--c-alert);
+}
+
+/* ---------------- shell ---------------- */
+
+.c-console {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-body);
+}
+
+.c-main {
+  position: relative;
+  min-height: 0;
+}
+
+.c-label {
+  font-family: var(--font-label);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.c-dim {
+  color: var(--c-text-dim);
+}
+
+.c-mono {
+  font-family: var(--font-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- top bar ---------------- */
+
+.c-top {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  min-height: 54px;
+  padding: 0 0 0 1.1rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+.c-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.c-brand svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.c-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
+  background: var(--c-bg);
+}
+
+.c-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+  text-decoration: none;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.c-tab:hover {
+  color: var(--c-text);
+}
+
+.c-tab[aria-current="page"] {
+  background: var(--c-raise);
+  color: var(--c-text);
+  box-shadow: inset 0 -2px 0 var(--c-info);
+}
+
+.c-tab:focus-visible {
+  outline: 2px solid var(--c-info);
+  outline-offset: 1px;
+}
+
+.c-top-status {
+  margin-left: auto;
+  display: flex;
+  align-self: stretch;
+}
+
+.c-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 1.15rem;
+  border-left: 1px solid var(--c-line);
+}
+
+.c-stat-value {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-label);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--tone, var(--c-neutral));
+  box-shadow: 0 0 0 3px
+    color-mix(in oklab, var(--tone, var(--c-neutral)) 20%, transparent);
+}
+
+/* ---------------- state pill ---------------- */
+
+.c-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in oklab, var(--tone) 42%, transparent);
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.c-pill.is-large {
+  padding: 7px 12px;
+  font-size: 0.74rem;
+}
+
+.c-pill.is-live .c-led {
+  animation: c-pulse 1.3s ease-in-out infinite;
+}
+
+.c-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 3px;
+  font-family: var(--font-label);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+  white-space: nowrap;
+}
+
+@keyframes c-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes c-fade-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
+/* ---------------- side column + panels ---------------- */
+
+.c-side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-left: 1px solid var(--c-line);
+  background: var(--c-surface);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+.c-panel {
+  flex: none;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  background: var(--c-surface-2);
+}
+
+.c-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 12px;
+}
+
+.c-panel-title {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+}
+
+.c-kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.c-kv dt {
+  font-family: var(--font-label);
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  white-space: nowrap;
+}
+
+.c-kv dd {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.c-kv dd small {
+  margin-left: 0.4rem;
+  font-size: 0.68rem;
+  color: var(--c-text-faint);
+}
+
+.c-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--c-text-faint);
+}
+
+.c-panel-foot {
+  margin-top: 12px;
+}
+
+/* launcher summary */
+
+.c-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: middle;
+}
+
+.c-pip {
+  width: 6px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--c-ready);
+}
+
+.c-pip.is-spent {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--c-line-strong);
+}
+
+/* track */
+
+.c-track-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 12px;
+}
+
+.c-track-id strong {
+  font-family: var(--font-label);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.c-track-id span:last-child {
+  font-size: 0.74rem;
+  color: var(--c-text-dim);
+}
+
+.c-diamond {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  transform: rotate(45deg);
+  border: 2px solid var(--c-alert);
+  background: color-mix(in oklab, var(--c-alert) 25%, transparent);
+}
+
+/* operator */
+
+.c-operator .c-hint {
+  margin: 10px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--c-text-dim);
+}
+
+.c-error {
+  margin: 10px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--c-alert);
+}
+
+.c-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* event log */
+
+.c-log {
+  flex: 1 1 200px;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+}
+
+.c-log ol {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+.c-log li {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--c-text-dim);
+}
+
+.c-log li:last-child {
+  color: var(--c-text);
+}
+
+.c-log time {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  line-height: 1.55;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.c-count {
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  color: var(--c-text-faint);
+}
+
+/* ---------------- buttons ---------------- */
+
+.c-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--c-radius);
+  background: transparent;
+  color: var(--c-text);
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 200ms ease,
+    opacity 140ms ease;
+}
+
+.c-btn:hover:not(:disabled) {
+  border-color: var(--c-text-dim);
+  background: var(--c-raise);
+}
+
+.c-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.c-btn:focus-visible {
+  outline: 2px solid var(--c-info);
+  outline-offset: 2px;
+}
+
+.c-btn-primary {
+  --tone: var(--c-info);
+  border-color: color-mix(in oklab, var(--tone) 65%, transparent);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  color: var(--tone);
+}
+
+.c-btn-primary:hover:not(:disabled) {
+  border-color: var(--tone);
+  background: color-mix(in oklab, var(--tone) 24%, transparent);
+}
+
+.c-btn-authorize {
+  --tone: var(--c-ready);
+  padding: 16px 14px;
+  font-size: 0.82rem;
+}
+
+.c-btn-authorize:not(:disabled) {
+  box-shadow: 0 0 26px -8px color-mix(in oklab, var(--tone) 75%, transparent);
+}
+
+.c-btn-small {
+  width: auto;
+  padding: 7px 11px;
+  font-size: 0.62rem;
+}
+
+.c-btn-quiet {
+  border-color: transparent;
+  color: var(--c-text-dim);
+}
+
+/* ---------------- bottom state timeline ---------------- */
+
+.c-timeline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 30%) auto;
+  align-items: center;
+  gap: 1.6rem;
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+.c-timeline-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.c-elapsed {
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-steps {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.c-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 6px;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.c-step::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 11px;
+  right: 0;
+  height: 1px;
+  background: var(--c-line-strong);
+}
+
+.c-step:last-child::before {
+  display: none;
+}
+
+.c-step-mark {
+  position: relative;
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--c-line-strong);
+  border-radius: 50%;
+  background: var(--c-bg);
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.c-step.is-done {
+  color: var(--c-text-dim);
+}
+
+.c-step.is-done::before {
+  background: color-mix(in oklab, var(--c-info) 70%, transparent);
+}
+
+.c-step.is-done .c-step-mark {
+  border-color: var(--c-info);
+  background: var(--c-info);
+}
+
+.c-step.is-current {
+  color: var(--tone);
+}
+
+.c-step.is-current .c-step-mark {
+  border-color: var(--tone);
+  background: var(--tone);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--tone) 24%, transparent);
+}
+
+.c-situation {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--c-text);
+}
+
+.c-situation span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------- map view ---------------- */
+
+.c-map-view {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.c-map-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #03060a;
+}
+
+.c-map {
+  position: absolute;
+  inset: 0;
+  background: #03060a;
+}
+
+.c-map.leaflet-container {
+  font-family: var(--font-body);
+  background: #03060a;
+}
+
+.c-map .c-pane-imagery {
+  filter: brightness(0.5) saturate(0.45) contrast(1.1);
+}
+
+.c-map .leaflet-control-attribution {
+  background: color-mix(in oklab, var(--c-bg) 70%, transparent);
+  color: var(--c-text-faint);
+  font-size: 10px;
+}
+
+.c-map .leaflet-control-attribution a {
+  color: var(--c-text-dim);
+}
+
+.c-map .leaflet-bar {
+  border: 1px solid var(--c-line);
+  box-shadow: none;
+}
+
+.c-map .leaflet-bar a {
+  background: var(--c-surface-2);
+  border-bottom-color: var(--c-line);
+  color: var(--c-text-dim);
+}
+
+.c-map .leaflet-bar a:hover {
+  background: var(--c-raise);
+  color: var(--c-text);
+}
+
+.c-map .leaflet-control-scale-line {
+  border-color: var(--c-text-dim);
+  background: color-mix(in oklab, var(--c-bg) 60%, transparent);
+  color: var(--c-text-dim);
+  font-family: var(--font-label);
+  font-size: 10px;
+}
+
+.c-map-hud {
+  position: absolute;
+  z-index: 800;
+  pointer-events: none;
+}
+
+.c-hud-tl {
+  top: 12px;
+  left: 12px;
+}
+
+.c-hud-card {
+  padding: 10px 12px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  background: color-mix(in oklab, var(--c-surface) 84%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.c-hud-card .c-panel-title {
+  margin-bottom: 10px;
+}
+
+.c-legend {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+}
+
+.c-legend li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.c-legend svg {
+  width: 16px;
+  height: 12px;
+  flex: none;
+}
+
+.c-banner {
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 11px 20px 10px;
+  border: 1px solid color-mix(in oklab, var(--tone) 55%, transparent);
+  border-radius: var(--c-radius);
+  background: color-mix(in oklab, var(--c-bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--tone);
+  font-family: var(--font-label);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  animation: c-fade-in 320ms ease-out;
+}
+
+.c-banner small {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--c-text-dim);
+}
+
+.c-map-hint {
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  background: color-mix(in oklab, var(--c-bg) 80%, transparent);
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+  white-space: nowrap;
+}
+
+.c-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--c-bg) 72%, transparent);
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--c-text-dim);
+}
+
+/* Leaflet div-icon markers. Anchored at their geographic point (0×0 icon). */
+
+.c-mk {
+  position: relative;
+}
+
+/* A node is a circle whose colour is its state. */
+.c-node-dot {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #05090f;
+  border-radius: 50%;
+  background: var(--node, var(--c-neutral));
+  box-shadow: 0 0 0 3px
+    color-mix(in oklab, var(--node, var(--c-neutral)) 22%, transparent);
+  transition: background 200ms ease;
+}
+
+.c-mk-node[data-state="STANDBY"] {
+  --node: var(--c-neutral);
+}
+.c-mk-node[data-state="TRACK_RECEIVED"] {
+  --node: var(--c-info);
+}
+.c-mk-node[data-state="ORIENTING"] {
+  --node: var(--c-active);
+}
+.c-mk-node[data-state="READY"] {
+  --node: var(--c-ready);
+}
+.c-mk-node[data-state="AUTHORIZED"],
+.c-mk-node[data-state="SIMULATED_LAUNCH"] {
+  --node: var(--c-armed);
+}
+
+/* The node whose response the operator is deciding on. */
+.c-mk-node.is-focus .c-node-dot {
+  animation: c-focus 1.5s ease-out infinite;
+}
+
+@keyframes c-focus {
+  from {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--node) 70%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 18px color-mix(in oklab, var(--node) 0%, transparent);
+  }
+}
+
+.c-mk-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  color: var(--c-text-dim);
+  white-space: nowrap;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 6px #000;
+}
+
+.c-mk-label b {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--c-text);
+}
+
+/* Beside the marker, not below: the node sits a few km from the site, and
+   stacked labels would collide once the map zooms out to take in a threat. */
+.c-mk-node .c-mk-label {
+  left: 16px;
+  top: -9px;
+}
+
+.c-mk-track .c-mk-diamond {
+  position: absolute;
+  left: -8px;
+  top: -8px;
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  border: 2px solid var(--c-alert);
+  background: color-mix(in oklab, var(--c-alert) 28%, transparent);
+  box-shadow: 0 0 12px rgba(255, 90, 82, 0.55);
+}
+
+.c-mk-track .c-mk-label {
+  left: 16px;
+  top: -12px;
+}
+
+.c-mk-track .c-mk-label b {
+  color: var(--c-alert);
+}
+
+.c-mk-track.is-resolved .c-mk-diamond {
+  border-color: var(--c-neutral);
+  background: transparent;
+  box-shadow: none;
+}
+
+.c-mk-track.is-resolved .c-mk-label b {
+  color: var(--c-neutral);
+}
+
+/* Once resolved, altitude and speed are noise next to the outcome marker. */
+.c-mk-track.is-resolved .c-mk-label span {
+  display: none;
+}
+
+.c-mk-interceptor svg {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 0 5px rgba(241, 246, 251, 0.7));
+}
+
+.c-mk-interceptor .c-mk-label {
+  left: 14px;
+  top: 4px;
+}
+
+.c-mk-hit .c-ring {
+  position: absolute;
+  left: -18px;
+  top: -18px;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--c-ready);
+  border-radius: 50%;
+  animation: c-ring 1.6s ease-out infinite;
+}
+
+.c-mk-hit .c-ring + .c-ring {
+  animation-delay: 0.8s;
+}
+
+.c-mk-hit .c-mk-label {
+  left: 0;
+  top: 22px;
+  transform: translateX(-50%);
+  color: var(--c-ready);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+@keyframes c-ring {
+  from {
+    transform: scale(0.35);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.c-mk-site svg {
+  position: absolute;
+  left: -13px;
+  top: -13px;
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 0 6px rgba(90, 169, 255, 0.5));
+}
+
+.c-mk-site .c-mk-label {
+  left: 0;
+  top: 16px;
+  transform: translateX(-50%);
+  align-items: center;
+}
+
+.c-mk-site .c-mk-label b {
+  color: #cfe3ff;
+}
+
+.c-mk-area {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -130%);
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: rgba(5, 9, 15, 0.55);
+  font-family: var(--font-label);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ccaff;
+  white-space: nowrap;
+}
+
+.c-mk-interceptor.is-stood-down svg {
+  opacity: 0.35;
+  filter: none;
+}
+
+/* The side panel names it; on the map it would crowd the intercept label. */
+.c-mk-interceptor.is-stood-down .c-mk-label {
+  display: none;
+}
+
+/* ---------------- launcher view ---------------- */
+
+.c-launcher-view {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr) 340px;
+}
+
+.c-launcher-left {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px;
+  border-right: 1px solid var(--c-line);
+  background: var(--c-surface);
+  overflow-y: auto;
+}
+
+.c-back {
+  align-self: flex-start;
+}
+
+.c-launcher-head h1 {
+  margin: 4px 0 2px;
+  font-family: var(--font-label);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.c-launcher-head p {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: var(--c-text-dim);
+}
+
+.c-axis {
+  padding: 12px 0 0;
+  border-top: 1px solid var(--c-line);
+}
+
+.c-axis-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 10px;
+}
+
+.c-axis-head h2 {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+}
+
+.c-axis-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 12px;
+}
+
+.c-axis-current {
+  display: block;
+  font-family: var(--font-label);
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-axis-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+}
+
+.c-axis-rows dt {
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  line-height: 1.6;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.c-axis-rows dd {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-axis-rows dd.is-requested {
+  color: var(--c-active);
+}
+
+.c-dial {
+  width: 72px;
+  height: 72px;
+}
+
+.c-launcher-facts {
+  padding-top: 12px;
+  border-top: 1px solid var(--c-line);
+}
+
+.c-launcher-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, #0d1622 0%, #05090f 70%);
+}
+
+.c-canvas {
+  position: absolute !important;
+  inset: 0;
+}
+
+.c-stage-hud {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.c-stage-tl {
+  top: 14px;
+  left: 14px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.c-stage-tr {
+  top: 14px;
+  right: 14px;
+}
+
+.c-stage-bl {
+  bottom: 14px;
+  left: 14px;
+}
+
+.c-stage-hud .c-chip {
+  background: color-mix(in oklab, var(--c-bg) 70%, transparent);
+}
+
+.c-stage-note {
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.c-launcher-center {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+
+.c-launcher-track {
+  padding-top: 12px;
+  border-top: 1px solid var(--c-line);
+}
+
+/* local sensor */
+
+.c-camera {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+.c-camera-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 8px 14px;
+}
+
+.c-seg {
+  display: flex;
+  padding: 2px;
+  border: 1px solid var(--c-line);
+  border-radius: 4px;
+  background: var(--c-bg);
+}
+
+.c-seg button {
+  appearance: none;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--c-text-dim);
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.c-seg button[aria-pressed="true"] {
+  background: var(--c-raise);
+  color: var(--c-text);
+}
+
+.c-seg button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.c-camera-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0 14px 14px;
+  overflow: hidden;
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  background: #020406;
+}
+
+.c-camera-svg,
+.c-camera-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.c-camera-video {
+  object-fit: contain;
+}
+
+.c-camera-tag {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: color-mix(in oklab, var(--c-bg) 70%, transparent);
+}
+
+/* response */
+
+.c-response .c-kv {
+  margin-bottom: 14px;
+}
+
+.c-stepper-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "label  stepper"
+    "avail  stepper";
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 14px;
+}
+
+.c-stepper-row > .c-label:first-child {
+  grid-area: label;
+  color: var(--c-text-dim);
+}
+
+.c-stepper-row > .c-label:last-child {
+  grid-area: avail;
+}
+
+.c-stepper {
+  grid-area: stepper;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--c-radius);
+  overflow: hidden;
+}
+
+.c-stepper button {
+  appearance: none;
+  width: 38px;
+  border: 0;
+  background: var(--c-raise);
+  color: var(--c-text);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.c-stepper button:hover:not(:disabled) {
+  background: var(--c-line-strong);
+}
+
+.c-stepper button:disabled {
+  cursor: not-allowed;
+  color: var(--c-text-faint);
+}
+
+.c-stepper output {
+  min-width: 46px;
+  padding: 8px 0;
+  border-inline: 1px solid var(--c-line-strong);
+  text-align: center;
+  font-family: var(--font-label);
+  font-size: 1.25rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-response-assigned .c-hint {
+  margin: 0 0 10px;
+}
+
+.c-int-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.c-int-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--c-line);
+  border-radius: 3px;
+  background: var(--c-bg);
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+}
+
+.c-int-id {
+  font-weight: 600;
+}
+
+.c-int-target {
+  color: var(--c-text-dim);
+}
+
+.c-int-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tone);
+}
+
+.c-subsection {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-line);
+}
+
+.c-btn-go {
+  --tone: var(--c-ready);
+}
+
+a.c-btn {
+  text-decoration: none;
+}
+
+/* simulation harness, bottom right */
+
+.c-demo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 1.2rem;
+  border-left: 1px solid var(--c-line);
+}
+
+/* The shared error boundary's own classes live in the legacy stylesheet. */
+.c-console .boundary {
+  display: grid;
+  gap: 0.6rem;
+  place-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: var(--c-text-dim);
+}
+
+.c-console .boundary-title {
+  font-family: var(--font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-alert);
+}
+
+/* ---------------- lists, decisions, pickers ---------------- */
+
+.c-rows {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.c-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: var(--c-bg);
+  font-size: 0.76rem;
+  text-align: left;
+}
+
+button.c-row {
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button.c-row:hover {
+  border-color: var(--c-line-strong);
+}
+
+button.c-row:focus-visible {
+  outline: 2px solid var(--c-info);
+  outline-offset: 1px;
+}
+
+.c-row-id {
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.c-row-num {
+  margin-left: auto;
+  font-family: var(--font-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-dim);
+}
+
+.c-row-status {
+  margin-left: auto;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tone, var(--c-text-dim));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.c-node-dot-sm {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--tone, var(--c-neutral));
+}
+
+.c-diamond.is-resolved {
+  border-color: var(--c-neutral);
+  background: transparent;
+}
+
+/* scenario picker */
+
+.c-scenarios {
+  display: grid;
+  gap: 6px;
+}
+
+.c-scenario {
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  background: var(--c-bg);
+  color: var(--c-text-dim);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.c-scenario b {
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  color: var(--c-text);
+}
+
+.c-scenario span {
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.c-scenario small {
+  font-family: var(--font-label);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.c-scenario:hover:not(:disabled) {
+  border-color: var(--c-line-strong);
+}
+
+.c-scenario[aria-checked="true"] {
+  border-color: color-mix(in oklab, var(--c-info) 70%, transparent);
+  background: color-mix(in oklab, var(--c-info) 12%, transparent);
+}
+
+.c-scenario:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* operator decision */
+
+.c-decision-count {
+  margin: 0 0 6px;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.c-decision-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.c-decision-title b {
+  font-family: var(--font-label);
+  letter-spacing: 0.04em;
+}
+
+.c-decision-id {
+  padding: 2px 6px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 3px;
+  font-family: var(--font-label);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  color: var(--c-text-dim);
+}
+
+.c-threat {
+  color: var(--c-alert);
+}
+
+.c-decision .c-kv {
+  margin-bottom: 14px;
+}
+
+.c-decision-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.c-decision-actions .c-btn-quiet {
+  width: auto;
+  padding: 0 16px;
+  border-color: var(--c-line-strong);
+}
+
+.c-queue {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-line);
+}
+
+.c-queue ol {
+  display: grid;
+  gap: 5px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.c-queue li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  color: var(--c-text-dim);
+}
+
+.c-queue .c-int-status {
+  margin-left: auto;
+}
+
+.c-chip.is-lit {
+  color: var(--tone);
+  border-color: color-mix(in oklab, var(--tone) 45%, transparent);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+}
+
+/* node picker on the launcher view */
+
+.c-node-picker {
+  display: grid;
+  gap: 6px;
+}
+
+.c-node-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--c-line);
+  border-radius: 5px;
+  background: var(--c-bg);
+}
+
+.c-node-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--c-text-dim);
+  font-family: var(--font-label);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.c-node-tab[aria-selected="true"] {
+  background: var(--c-raise);
+  color: var(--c-text);
+}
+
+.c-follow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-label);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  cursor: pointer;
+}
+
+.c-follow input {
+  accent-color: var(--c-info);
+}
+
+.c-node-tab-id {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interceptors left at that node. */
+.c-node-tab-count {
+  min-width: 15px;
+  padding: 1px 0;
+  border-radius: 3px;
+  background: var(--c-bg-deep, var(--c-bg));
+  color: var(--c-text-faint);
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.c-node-tab[aria-selected="true"] .c-node-tab-count {
+  color: var(--c-text-dim);
+}
+
+/* site location */
+
+.c-field {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.c-select-wide {
+  width: 100%;
+}
+
+.c-site-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.c-site-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.c-site-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.c-site-form input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--c-radius);
+  background: var(--c-raise);
+  color: var(--c-text);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+}
+
+.c-site-form input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* mission counters + simulation select */
+
+.c-counters {
+  display: flex;
+  gap: 1.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.c-counter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.c-counter-value {
+  font-family: var(--font-label);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-faint);
+}
+
+.c-counter.is-lit .c-counter-value {
+  color: var(--tone);
+}
+
+.c-counter.is-lit .c-label {
+  color: color-mix(in oklab, var(--tone) 65%, var(--c-text-faint));
+}
+
+.c-select {
+  padding: 6px 8px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--c-radius);
+  background: var(--c-raise);
+  color: var(--c-text);
+  font-family: var(--font-label);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.c-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.c-hud-tr {
+  top: 12px;
+  right: 12px;
+}
+
+.c-location {
+  background: color-mix(in oklab, var(--c-bg) 78%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/* ---------------- responsive ---------------- */
+
+@media (max-width: 1280px) {
+  .c-launcher-view {
+    grid-template-columns: 240px minmax(0, 1fr) 300px;
+  }
+  .c-map-view {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .c-top-status .c-stat:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .c-main {
+    overflow-y: auto;
+  }
+  .c-map-view,
+  .c-launcher-view {
+    height: auto;
+    grid-template-columns: 1fr;
+  }
+  .c-launcher-center {
+    grid-template-rows: 55vh 45vh;
+  }
+  .c-map-stage {
+    height: 62vh;
+  }
+  .c-side,
+  .c-launcher-left {
+    border: 0;
+    overflow: visible;
+  }
+  .c-timeline {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+  .c-top-status .c-stat:nth-child(n + 3) {
+    display: none;
+  }
+}

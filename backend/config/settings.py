@@ -27,8 +27,25 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # ---------------- Protected site (V0 defense scenario) ----------------
+    # Where the demo is centred until a browser reports its position. Set these
+    # to pin the demo to one place: a machine with location services off, a
+    # recorded walkthrough, or a site that is not where the operator is sitting.
+    # Both coordinates must be given together; otherwise the built-in default
+    # in backend/scenario/config.py stands.
+    site_latitude: float | None = None
+    site_longitude: float | None = None
+    site_name: str | None = None
+
+    # ---------------- Video / CV pipeline (optional track source) ----------------
+    # The V0 demo is the launcher scenario (backend/scenario/), which needs no
+    # camera; its tunables live in backend/scenario/config.py. The detection
+    # pipeline below is kept as a future track source and as the sensor lab at
+    # /#/sensor-lab. Enable it to run the frame loop at startup.
+    video_pipeline_enabled: bool = False
+
     # ---------------- Video source ----------------
-    # "file" replays a recorded clip (repeatable — the demo default).
+    # "file" replays a recorded clip (repeatable - the demo default).
     # "camera" opens a USB/built-in camera.
     video_source: Literal["file", "camera"] = "file"
     video_path: Path = REPO_ROOT / "assets" / "videos" / "demo_drone.mp4"
@@ -44,11 +61,11 @@ class Settings(BaseSettings):
     jpeg_quality: int = 80
 
     # ---------------- Detector ----------------
-    # "motion" — pure OpenCV background subtraction. No model weights, no
+    # "motion" - pure OpenCV background subtraction. No model weights, no
     #            torch. Extremely reliable for an airborne object against
     #            sky, which is exactly the V0 scenario. This is the default
     #            because the V0 priority is repeatability.
-    # "yolo"   — Ultralytics YOLO26n. Requires requirements-yolo.txt.
+    # "yolo"   - Ultralytics YOLO26n. Requires requirements-yolo.txt.
     detector: Literal["motion", "yolo"] = "motion"
     detection_threshold: float = 0.55
     # YOLO gets its own, lower default. COCO confidences for a small, distant
@@ -126,7 +143,7 @@ class Settings(BaseSettings):
 
     # ---------------- Speed assessment ----------------
     # Horizontal field of view of the sensor, degrees. Absolute speed in m/s
-    # is only reported when this is set — without it the geometry is
+    # is only reported when this is set - without it the geometry is
     # unconstrained and any figure would be invented. 0 disables.
     camera_hfov_deg: float = 0.0
 
@@ -152,7 +169,7 @@ class Settings(BaseSettings):
 
     # ---------------- Intercept estimate (display only) ----------------
     # Notional canister position in normalised frame coordinates.
-    # (0.5, 1.0) is bottom-centre — the camera sits on the canister.
+    # (0.5, 1.0) is bottom-centre - the camera sits on the canister.
     launch_point_x: float = 0.5
     launch_point_y: float = 1.0
     # Notional interceptor speed, in normalised frame widths per second.
@@ -182,7 +199,7 @@ class Settings(BaseSettings):
 
     # ---------------- Engagement readiness ----------------
     # Minimum sensor-frame projection confidence before a track counts as
-    # stable enough to engage. Not a targeting quantity — it is a measure of
+    # stable enough to engage. Not a targeting quantity - it is a measure of
     # how consistently the track is moving in the image.
     readiness_min_track_stability: float = 0.25
 
@@ -192,7 +209,7 @@ class Settings(BaseSettings):
     runs_dir: Path = REPO_ROOT / "runs"
 
     # ---------------- Actuation ----------------
-    # "simulated" — logs the event and emits it over the WebSocket. Safe.
+    # "simulated" - logs the event and emits it over the WebSocket. Safe.
     actuator: Literal["simulated"] = "simulated"
     # Seconds the actuator takes to report completion, so the UI can play a
     # launch cue rather than snapping instantly to done.

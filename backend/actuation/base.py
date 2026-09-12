@@ -55,7 +55,7 @@ def build_launch_command(
     """Mint a launch command.
 
     The identifier is a fresh UUID per command, so a mission report can be
-    correlated with a launcher log line-for-line even across restarts — the
+    correlated with a launcher log line-for-line even across restarts - the
     property that makes hardware-in-the-loop testing tractable.
     """
     return LaunchCommand(

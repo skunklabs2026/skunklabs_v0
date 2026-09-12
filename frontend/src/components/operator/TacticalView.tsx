@@ -7,7 +7,7 @@ interface Props {
 }
 
 /**
- * The local tactical picture — the canister, its detection sector, the tracks
+ * The local tactical picture - the canister, its detection sector, the tracks
  * it is holding, and where the primary track is projected to go.
  *
  * >>> WHAT THIS IS NOT <<<
@@ -18,7 +18,7 @@ interface Props {
  * geographic display.
  *
  * >>> DESIGN RULES <<<
- * Only confirmed tracks are plotted — the backend filters them, and unconfirmed
+ * Only confirmed tracks are plotted - the backend filters them, and unconfirmed
  * candidates are reported as a count in the corner. One label, on the primary.
  * Everything else is a mark. A tactical view whose job is to make one target
  * obvious fails the moment it becomes a field of competing labels.
@@ -33,7 +33,7 @@ const SECTOR_DEPTH = 70;
  * Apparent size at which a track is drawn hard up against the canister.
  *
  * Apparent size is the only proximity cue an uncalibrated camera offers, and
- * a drone typically subtends a few percent of the frame — so a linear mapping
+ * a drone typically subtends a few percent of the frame - so a linear mapping
  * pinned every track to the far edge in a single clump. The square root
  * spreads the useful range across the sector. It remains a *relative* cue:
  * there are no units on it and none are implied.
@@ -57,8 +57,8 @@ function reach(depth: number): number {
  * Where a bearing/depth pair falls in the plan view.
  *
  * The sector is a triangle, so its half-width at any depth is exactly
- * `SECTOR_HALF_WIDTH * reach(depth)`. Bearing is scaled by that same factor —
- * not an independent curve — so a track at the edge of the field of view is
+ * `SECTOR_HALF_WIDTH * reach(depth)`. Bearing is scaled by that same factor -
+ * not an independent curve - so a track at the edge of the field of view is
  * drawn on the edge of the sector rather than just outside it.
  */
 function project(bearing: number, depth: number): { x: number; y: number } {
@@ -124,7 +124,7 @@ function TrackMark({ track, color }: { track: TacticalTrack; color: string }) {
     <g className="tac-track is-primary" style={{ color }}>
       <ProjectedPath track={track} color={color} />
 
-      {/* Lock brackets rather than a filled blob — it reads as an instrument
+      {/* Lock brackets rather than a filled blob - it reads as an instrument
           cue and stays legible against the sector fill. */}
       <g stroke={color} strokeWidth={0.6} fill="none">
         <path
@@ -232,7 +232,7 @@ export function TacticalView({ tactical, state }: Props) {
           <TrackMark key={track.target_id} track={track} color={color} />
         ))}
 
-        {/* The canister — the origin of everything on this view. */}
+        {/* The canister - the origin of everything on this view. */}
         <circle
           cx={CANISTER.x}
           cy={CANISTER.y}

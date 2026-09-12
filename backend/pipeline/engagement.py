@@ -1,7 +1,7 @@
 """Engagement: tracks in, mission decisions out.
 
 One role: decide what the tracks *mean*, and carry that decision as far as the
-launcher boundary — no further.
+launcher boundary - no further.
 
     tracks
       → target designation
@@ -225,7 +225,7 @@ class EngagementStage:
     def _designate(self, primary) -> str:
         """Assign or recall this track's operator designation.
 
-        A first designation is a reportable event — it is the moment the
+        A first designation is a reportable event - it is the moment the
         canister stops seeing "an object" and starts holding "UAV-001".
         """
         known = self.targets.has_designation(primary.track_id)
@@ -284,7 +284,7 @@ class EngagementStage:
     def _predict(self, primary, *, width: int, height: int, now: float, fps: float):
         """Extrapolate the primary target's path in the sensor frame.
 
-        Display and track-stability only — the mission state machine consumes
+        Display and track-stability only - the mission state machine consumes
         no geometry from here, and nothing physical acts on it.
         """
         if primary is None:
@@ -314,7 +314,7 @@ class EngagementStage:
     def _issue_launch_command(self, mission_status: MissionStatus, now: float) -> None:
         """Mint a launch command, hand it across the boundary, log the reply.
 
-        Called exactly once per authorization — the one-shot latch lives in
+        Called exactly once per authorization - the one-shot latch lives in
         the state machine, so this is safe to call on every frame that reports
         a pending dispatch.
 
@@ -325,7 +325,7 @@ class EngagementStage:
             target_id=mission_status.target_id,
             mission_state=mission_status.state,
             readiness=ReadinessState.AUTHORIZED,
-            # The operator's own timestamp, not this frame's — the two differ
+            # The operator's own timestamp, not this frame's - the two differ
             # by a frame, and the gap between them is exactly the latency a
             # field test measures.
             authorized_at=self.mission.authorized_at or now,
@@ -433,7 +433,7 @@ class EngagementStage:
         return self.mission.request_authorization()
 
     def idle_status(self) -> MissionStatus:
-        """Advance the mission with no target — used while the sensor is down."""
+        """Advance the mission with no target - used while the sensor is down."""
         return self.mission.update(None, None, engagement_ready=False)
 
     def launcher_status(self, now: float | None = None) -> LauncherStatus:

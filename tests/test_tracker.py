@@ -111,7 +111,7 @@ class TestByteTracker:
         A small target crossing quickly moves further than its own width
         between frames, so consecutive boxes have IoU exactly 0. With IoU
         association alone the track breaks and a new ID is issued every
-        frame — visibly wrong on the one target that matters.
+        frame - visibly wrong on the one target that matters.
         """
         tracker = ByteTracker(min_hits=2, gate_scale=4.0)
         ids = set()
@@ -139,7 +139,7 @@ class TestByteTracker:
         tracker = ByteTracker(min_hits=1, gate_scale=4.0)
         tracker.update([make_detection(x=100.0, y=100.0, width=20.0, height=20.0)], 1_000.0)
 
-        # Same area, but 8x the size — not the same object.
+        # Same area, but 8x the size - not the same object.
         tracks = tracker.update(
             [make_detection(x=130.0, y=100.0, width=160.0, height=160.0)], 1_000.04
         )

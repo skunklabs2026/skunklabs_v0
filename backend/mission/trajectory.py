@@ -14,7 +14,7 @@ This works entirely in the *image plane*, in normalised (0..1) frame
 coordinates. It is a kinematic extrapolation of pixel motion for display, not
 a flight model, not a guidance law, and not a firing solution. There is no
 range, no altitude, no camera calibration and no 3D. Nothing in the system
-acts on the output — it drives an on-screen prediction and a simulated
+acts on the output - it drives an on-screen prediction and a simulated
 animation. See README, "What V0 is not".
 
 Why a constant-acceleration least-squares fit rather than a Kalman filter:
@@ -199,7 +199,7 @@ class InterceptSolver:
     Walks the predicted trajectory and finds the earliest sample the
     interceptor could reach in time, given a constant speed from a fixed
     launch point. This is the classic "can I get there before it does"
-    check, solved by sampling rather than algebraically — the trajectory is
+    check, solved by sampling rather than algebraically - the trajectory is
     already a discrete set of points, and sampling handles the curved fit
     without a closed-form solution.
 

@@ -4,14 +4,14 @@ Turns the current tracks into a plan-style view: the canister at the origin,
 its detection sector opening upward, and each track plotted by where it sits
 within that sector.
 
->>> SCOPE — READ THIS BEFORE ADDING A FIELD <<<
+>>> SCOPE - READ THIS BEFORE ADDING A FIELD <<<
 There is no GPS, no compass, no rangefinder and no camera calibration in V0.
 Everything this module produces is *relative to the sensor frame*, and the
 model says so in three places: the `frame` discriminator, the `frame_label`
 shown on the view, and the per-track `bearing_available` / `range_available`
 flags, which are False.
 
-The structure is built for the sources that come later — a calibrated sensor,
+The structure is built for the sources that come later - a calibrated sensor,
 an external track feed, a second canister. Those add producers and set the
 availability flags; they do not change the view. Anything that would require
 inventing a geographic quantity does not belong here.
@@ -60,7 +60,7 @@ def _projected_path(target: Target) -> list[Point]:
     """The track's projected path, as future bearing/elevation pairs.
 
     Bearing and elevation only. Range was never measured, so it cannot be
-    extrapolated — the view holds the track's current depth along the whole
+    extrapolated - the view holds the track's current depth along the whole
     path rather than implying a closing rate the sensor cannot see.
     """
     projection = target.projection
@@ -120,7 +120,7 @@ def build_tactical_picture(
 
     Only *confirmed* tracks are plotted. A tactical picture is a picture of
     what the canister is holding, and an unconfirmed detection is not yet
-    that — it is a candidate the tracker has seen once or twice and may drop
+    that - it is a candidate the tracker has seen once or twice and may drop
     on the next frame. Plotting them filled the view with anonymous marks
     (they share the designation "UNCONFIRMED", so they were not even
     distinguishable from one another) and buried the one track that mattered.

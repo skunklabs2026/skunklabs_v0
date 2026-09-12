@@ -1,4 +1,4 @@
-"""Track projection — the operator-facing view of image-plane extrapolation.
+"""Track projection - the operator-facing view of image-plane extrapolation.
 
 `trajectory.py` does the maths. This module turns its output into the four
 things an operator can legitimately be told from an uncalibrated camera:
@@ -26,7 +26,7 @@ import math
 from backend.schemas import TrackProjection, TrackStability, Trajectory
 
 # Projection confidence bands. A projection below the first band is not shown
-# as a direction at all — an unstable track has no meaningful heading.
+# as a direction at all - an unstable track has no meaningful heading.
 _STABLE = 0.60
 _SETTLING = 0.30
 
@@ -77,7 +77,7 @@ def build_track_projection(trajectory: Trajectory | None) -> TrackProjection:
     stability = _stability(trajectory.confidence)
 
     direction_deg: float | None = None
-    direction_label = "—"
+    direction_label = "-"
     if velocity is not None and velocity.speed >= _MIN_SPEED:
         direction_deg, direction_label = _direction(velocity.x, velocity.y)
 

@@ -6,7 +6,7 @@ between frames. Swapping a `VideoCapture` underneath an in-flight `read()`
 is a reliable way to crash OpenCV, so the two are kept strictly apart.
 
 This module owns the live `VideoSource` and the record of what is currently
-configured. It builds a replacement detector but does not install it — that
+configured. It builds a replacement detector but does not install it - that
 belongs to the perception stage, which owns detectors.
 """
 
@@ -108,7 +108,7 @@ class InputController:
         """Swap in a queued video source.
 
         Returns a reason string if the source changed, else None. The old
-        source is retained on failure — a bad path must never leave the demo
+        source is retained on failure - a bad path must never leave the demo
         with no video at all.
         """
         with self._lock:

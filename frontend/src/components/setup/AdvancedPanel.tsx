@@ -11,7 +11,7 @@ interface Props {
 }
 
 /**
- * Perception settings — detector choice and confidence threshold.
+ * Perception settings - detector choice and confidence threshold.
  *
  * Collapsed by default, and that is the point of this component existing at
  * all. Which detector is running is an engineering decision about how the

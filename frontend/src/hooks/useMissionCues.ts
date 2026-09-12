@@ -8,7 +8,7 @@ const LAUNCH_CUE_MS = 1600;
  * True for a moment after the mission enters AUTHORIZED.
  *
  * Fires on the *transition*, not the state, so holding AUTHORIZED does not
- * hold the flash — and re-entering it later plays the cue again.
+ * hold the flash - and re-entering it later plays the cue again.
  */
 export function useLaunchCue(state: MissionState): boolean {
   const [launching, setLaunching] = useState(false);
@@ -30,7 +30,7 @@ export function useLaunchCue(state: MissionState): boolean {
 /**
  * Space bar authorizes, so the demo can be driven without the mouse.
  *
- * Gated by `enabled` exactly like the on-screen button — the keyboard must
+ * Gated by `enabled` exactly like the on-screen button - the keyboard must
  * not be a way around the authorization interlock. Ignored while the
  * operator is typing in a field.
  */

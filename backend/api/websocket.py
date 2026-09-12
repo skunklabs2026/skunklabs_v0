@@ -1,7 +1,7 @@
 """WebSocket telemetry channel.
 
 Pushes one `TelemetryFrame` per processed frame. The client never polls and
-never computes mission state — it renders what arrives.
+never computes mission state - it renders what arrives.
 
 The pipeline's frame loop is blocking (OpenCV, inference), so waiting for the
 next frame is offloaded to a thread executor rather than blocking the event
@@ -26,11 +26,15 @@ router = APIRouter()
 @router.websocket("/ws/telemetry")
 async def telemetry_socket(websocket: WebSocket) -> None:
     await websocket.accept()
-    pipeline: MissionPipeline = websocket.app.state.pipeline
+    pipeline: MissionPipeline | None = websocket.app.state.pipeline
+    if pipeline is None:
+        # 1013 "try again later": the sensor lab is off in this process.
+        await websocket.close(code=1013, reason="Video pipeline disabled")
+        return
     log.info("Operator UI connected")
 
     # Send the retained event log once on connect so a client that joins mid-
-    # run — or reconnects after a drop — sees the full history rather than
+    # run - or reconnects after a drop - sees the full history rather than
     # only events from this point forward.
     try:
         await websocket.send_json(

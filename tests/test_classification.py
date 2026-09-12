@@ -19,7 +19,7 @@ DT = 0.04  # 25 fps
 def feed(classifier: PlatformClassifier, points, *, track_id: int = 1, size: float = 0.05):
     """Feed a list of (x, y) samples at a fixed frame interval.
 
-    Classifies after every observation, exactly as the pipeline does — the
+    Classifies after every observation, exactly as the pipeline does - the
     commit hysteresis counts consecutive *classify* calls, so feeding in bulk
     and classifying once would never commit.
     """
@@ -79,7 +79,7 @@ class TestClassifier:
         assert features.hover_fraction == 0.0
 
     def test_identifies_hovering_multirotor(self):
-        """Hovering is decisive — a fixed-wing physically cannot."""
+        """Hovering is decisive - a fixed-wing physically cannot."""
         classifier = PlatformClassifier()
         platform, features = feed(classifier, hovering_quad())
         assert platform is PlatformClass.MULTIROTOR
@@ -142,7 +142,7 @@ class TestClassifier:
 class TestNoiseRobustness:
     """Regression: tracker jitter must not masquerade as manoeuvring.
 
-    Observed on a real clip — a dead-straight fixed-wing run was classified
+    Observed on a real clip - a dead-straight fixed-wing run was classified
     MULTIROTOR because heading was computed between consecutive noisy
     samples. On a short per-frame step, a pixel of jitter is a large angle,
     so the measured turn rate was hundreds of deg/s and straightness was
@@ -310,7 +310,7 @@ class TestAgainstRealClips:
     """End-to-end: the two demo clips must classify as their own airframe.
 
     This runs the real detector, tracker and classifier over the generated
-    clips — the check that catches feature-extraction regressions which unit
+    clips - the check that catches feature-extraction regressions which unit
     tests on synthetic point lists would miss.
     """
 

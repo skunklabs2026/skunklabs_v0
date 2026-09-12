@@ -21,7 +21,7 @@ export interface Telemetry {
 /**
  * Subscribes to backend telemetry.
  *
- * The backend is the authoritative source of mission state — this hook only
+ * The backend is the authoritative source of mission state - this hook only
  * transports it. It never derives, infers or smooths mission state, because
  * a UI that disagrees with the backend is worse than a UI that briefly shows
  * a stale frame.
@@ -57,8 +57,8 @@ export function useTelemetry(): Telemetry {
       }
 
       if (message.type === "history") {
-        // Sent once on connect, so a page opened mid-run — or reopened
-        // after a drop — shows the whole event log, not just what follows.
+        // Sent once on connect, so a page opened mid-run - or reopened
+        // after a drop - shows the whole event log, not just what follows.
         setEvents(message.events.slice(-MAX_EVENTS));
         return;
       }

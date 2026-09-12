@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 
 // The API and the MJPEG/WebSocket streams are proxied through the dev server
 // so the browser sees a single origin. That keeps the frontend free of any
-// backend host configuration — it always talks to its own origin.
+// backend host configuration - it always talks to its own origin.
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -22,7 +22,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
-      exclude: ["node_modules/", "src/test/"],
+      exclude: ["node_modules/", "src/test/**"],
       thresholds: {
         statements: 90,
         branches: 90,

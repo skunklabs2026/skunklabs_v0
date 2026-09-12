@@ -2,7 +2,7 @@
 
 `Detector` is the seam between perception and everything downstream. The
 tracker, target manager, rule engine and state machine only ever see
-`Detection` objects — they contain no model-specific concepts, so swapping
+`Detection` objects - they contain no model-specific concepts, so swapping
 YOLO for anything else touches this file alone.
 
 Two implementations ship with V0:
@@ -10,7 +10,7 @@ Two implementations ship with V0:
   MotionDetector  Background subtraction. No model weights, no torch, no
                   download. An airborne object against sky is close to the
                   ideal case for it, which makes it the most *repeatable*
-                  choice for the demo — the V0 priority.
+                  choice for the demo - the V0 priority.
 
   YoloDetector    Ultralytics YOLO26n. Higher-fidelity classification, at
                   the cost of a large dependency. Optional.
@@ -108,7 +108,7 @@ class MotionDetector(Detector):
 
     Confidence is synthesised from how solidly the contour fills its bounding
     box and how far it exceeds the noise floor. It is a heuristic quality
-    score, not a class probability — but it behaves monotonically, which is
+    score, not a class probability - but it behaves monotonically, which is
     all the downstream rule engine needs.
     """
 
@@ -178,7 +178,7 @@ class MotionDetector(Detector):
         blurred = cv2.GaussianBlur(frame, (5, 5), 0)
         mask = self._subtractor.apply(blurred)
 
-        # Let the background model settle before trusting anything — the
+        # Let the background model settle before trusting anything - the
         # first frames register the entire scene as foreground.
         if self._frames_seen < self.warmup_frames:
             return []
@@ -280,7 +280,7 @@ class YoloDetector(Detector):
             log.info("YOLO detector loaded: %s on %s", self.model_path, self.device)
         except Exception as exc:
             # A missing model or missing torch must not prevent the server
-            # from starting — the caller falls back to the motion detector.
+            # from starting - the caller falls back to the motion detector.
             log.error("Could not load YOLO model %s: %s", self.model_path, exc)
             self._model = None
             self._ready = False
@@ -348,7 +348,7 @@ def build_detector(settings) -> Detector:
         )
         if detector.ready:
             return detector
-        log.warning("YOLO unavailable — falling back to the motion detector")
+        log.warning("YOLO unavailable - falling back to the motion detector")
 
     return MotionDetector(
         min_area_frac=settings.motion_min_area_frac,

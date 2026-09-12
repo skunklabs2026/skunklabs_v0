@@ -1,4 +1,4 @@
-"""Simulated launcher interface — the V0 default.
+"""Simulated launcher interface - the V0 default.
 
 Performs no physical action whatsoever. It receives a `LaunchCommand`,
 timestamps it, transitions its own state, acknowledges receipt, and returns.

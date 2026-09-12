@@ -8,7 +8,7 @@ machine.
 
 The clip renders a quadrotor silhouette crossing a gradient sky with drifting
 cloud texture and mild sensor noise. That is enough structure for the motion
-detector to behave exactly as it would on real sky footage — a small, compact,
+detector to behave exactly as it would on real sky footage - a small, compact,
 moving foreground object against a slowly-varying background.
 
 To use your own footage instead, drop an MP4 at assets/videos/ and point
@@ -144,7 +144,7 @@ def generate(
     `platform` selects the flight profile, which is what the backend's
     classifier is meant to tell apart:
 
-      multirotor  a quadrotor weaving across the frame — variable speed,
+      multirotor  a quadrotor weaving across the frame - variable speed,
                   pronounced heading changes, brief near-hovers.
       fixed_wing  a flying wing on a straight, fast, constant-speed run.
     """
@@ -191,7 +191,7 @@ def generate(
                 scale = 0.5 + t * 0.7
                 _draw_fixed_wing(frame, cx, cy, scale)
             else:
-                # Weaving flight with speed changes and a near-hover midway —
+                # Weaving flight with speed changes and a near-hover midway -
                 # the MULTIROTOR profile.
                 # Several full direction reversals plus an early hover, so
                 # the multirotor signature is present within the first few

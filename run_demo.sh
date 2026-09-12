@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# SkunkLabs MVP V0 — single-command launcher.
+# SkunkLabs MVP V0 - single-command launcher.
 #
 # Starts the backend and the operator UI, waits for both to be healthy, and
 # opens the screen. Ctrl-C stops everything.
@@ -21,18 +21,20 @@ log()  { printf '\033[38;5;173m[skunklabs]\033[0m %s\n' "$*"; }
 fail() { printf '\033[38;5;167m[skunklabs]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------- preflight
-[ -x "$PYTHON" ] || fail "No virtualenv at .venv — run:  python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+[ -x "$PYTHON" ] || fail "No virtualenv at .venv - run:  python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt"
 
 "$PYTHON" -c "import fastapi, cv2" 2>/dev/null \
-  || fail "Backend dependencies missing — run:  .venv/bin/pip install -r requirements.txt"
+  || fail "Backend dependencies missing - run:  .venv/bin/pip install -r requirements.txt"
 
 [ -d "$REPO_ROOT/frontend/node_modules" ] \
-  || fail "Frontend dependencies missing — run:  cd frontend && npm install"
+  || fail "Frontend dependencies missing - run:  cd frontend && npm install"
 
-# The demo clip is generated, not committed. Create it on first run.
+# The launcher demo needs no video. The sensor lab's demo clip is generated,
+# not committed - create it on first run, only when the video pipeline is on.
 VIDEO="${SKUNK_VIDEO_PATH:-$REPO_ROOT/assets/videos/demo_drone.mp4}"
-if [ "${SKUNK_VIDEO_SOURCE:-file}" = "file" ] && [ ! -f "$VIDEO" ]; then
-  log "Demo clip missing — generating it (about 10 seconds)…"
+if [ "${SKUNK_VIDEO_PIPELINE_ENABLED:-false}" = "true" ] \
+  && [ "${SKUNK_VIDEO_SOURCE:-file}" = "file" ] && [ ! -f "$VIDEO" ]; then
+  log "Demo clip missing - generating it (about 10 seconds)…"
   "$PYTHON" scripts/make_demo_video.py
 fi
 
@@ -74,8 +76,8 @@ for _ in $(seq 1 60); do
   sleep 0.5
 done
 
-log "Operator screen: http://localhost:${FRONTEND_PORT}"
-command -v open >/dev/null && open "http://localhost:${FRONTEND_PORT}" || true
+log "Operator interface: http://localhost:${FRONTEND_PORT}/map"
+command -v open >/dev/null && open "http://localhost:${FRONTEND_PORT}/map" || true
 
 log "Ready. Press Ctrl-C to stop."
 wait

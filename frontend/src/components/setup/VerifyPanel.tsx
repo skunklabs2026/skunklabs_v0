@@ -11,7 +11,7 @@ interface Props {
 /**
  * Evidence that the pipeline is working on *this* footage.
  *
- * This is the answer to "does it actually track my video?" — frames flowing,
+ * This is the answer to "does it actually track my video?" - frames flowing,
  * detections accumulating, tracks forming, and which classes are being seen.
  */
 export function VerifyPanel({ system, detection, sourceName, live }: Props) {
@@ -19,13 +19,13 @@ export function VerifyPanel({ system, detection, sourceName, live }: Props) {
 
   return (
     <div className="verify">
-      <Row label="Source" value={sourceName ?? "—"} muted={!sourceName} />
+      <Row label="Source" value={sourceName ?? "-"} muted={!sourceName} />
       <Row
         label="Frames"
         value={
           system
             ? `${detection?.frames_processed ?? 0} @ ${system.fps.toFixed(0)} fps`
-            : "—"
+            : "-"
         }
         muted={!system}
       />
@@ -41,7 +41,7 @@ export function VerifyPanel({ system, detection, sourceName, live }: Props) {
       />
       <Row
         label="Inference"
-        value={detection?.latency_ms ? `${detection.latency_ms} ms` : "—"}
+        value={detection?.latency_ms ? `${detection.latency_ms} ms` : "-"}
         muted={!detection?.latency_ms}
       />
 
@@ -53,7 +53,7 @@ export function VerifyPanel({ system, detection, sourceName, live }: Props) {
         ))}
         {live && classes.length === 0 && (
           <span className="note">
-            Nothing detected yet — try the other detector, or lower the confidence
+            Nothing detected yet - try the other detector, or lower the confidence
             threshold.
           </span>
         )}

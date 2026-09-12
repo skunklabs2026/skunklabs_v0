@@ -1,4 +1,4 @@
-"""The mission timeline — the operator's view of how far the mission has got.
+"""The mission timeline - the operator's view of how far the mission has got.
 
     SEARCH → DETECT → TRACK → CONFIRM → FOLLOW → AUTHORIZE → LAUNCH
 
@@ -28,7 +28,7 @@ PHASE_ORDER: tuple[MissionPhase, ...] = (
 )
 
 # Which phase each mission state is *working on*. States not listed here have
-# no forward progress to show — see `_ACTUATED` and the fall-back cases below.
+# no forward progress to show - see `_ACTUATED` and the fall-back cases below.
 _ACTIVE_PHASE: dict[MissionState, MissionPhase] = {
     MissionState.SEARCHING: MissionPhase.SEARCH,
     MissionState.DETECTED: MissionPhase.DETECT,
@@ -61,7 +61,7 @@ def build_timeline(state: MissionState, progress: float) -> list[PhaseProgress]:
     index = PHASE_ORDER.index(current)
 
     # ACTUATED is the one state where the final phase is finished rather than
-    # in progress — the launch command has been issued and acknowledged.
+    # in progress - the launch command has been issued and acknowledged.
     complete_through = index if state is MissionState.ACTUATED else index - 1
 
     steps: list[PhaseProgress] = []

@@ -26,7 +26,7 @@ interface Props {
  * whether it is healthy, how far the mission has got, what it is looking at,
  * and what the operator is being asked to decide.
  *
- * Layout and wiring only — the launch cue and the keyboard shortcut live in
+ * Layout and wiring only - the launch cue and the keyboard shortcut live in
  * `useMissionCues`, the readouts in `SidePanel`, the sequence in
  * `MissionTimeline`. Adding a panel here should never mean editing mission
  * behaviour.
@@ -85,7 +85,7 @@ export function OperatorScreen({
             type="button"
             className="link-button"
             onClick={onChangeSource}
-            title="Canister setup — source and perception settings"
+            title="Canister setup - source and perception settings"
           >
             Setup ▸
           </button>

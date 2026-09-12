@@ -1,5 +1,5 @@
 /* ============================================================
-   BASE — reset, shell, and the primitives shared by both screens
+   BASE - reset, shell, and the primitives shared by both screens
    ============================================================ */
 
 * {
@@ -101,7 +101,7 @@ button {
 
 /* ---------------- readouts ----------------
    Label left, value right. `min-width: 0` on both columns is what stops a
-   long filename forcing the whole panel wider than its container — the
+   long filename forcing the whole panel wider than its container - the
    default `min-width: auto` on a grid item refuses to shrink below its
    content, which is what broke the setup layout. */
 

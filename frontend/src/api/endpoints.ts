@@ -7,7 +7,28 @@
 
 import { apiUrl, wsUrl } from "./config";
 
+export type ScenarioCommandName =
+  "configure" | "start" | "authorize" | "decline" | "reassign" | "reset";
+
+/** Commands that act on one proposed response rather than the mission. */
+const RESPONSE_COMMANDS: ReadonlySet<ScenarioCommandName> = new Set([
+  "authorize",
+  "decline",
+  "reassign",
+]);
+
 export const endpoints = {
+  // ---- V0 defense scenario ----
+  scenario: () => apiUrl("/api/scenario"),
+  scenarioCommand: (command: ScenarioCommandName, responseId?: string) =>
+    RESPONSE_COMMANDS.has(command)
+      ? apiUrl(
+          `/api/scenario/responses/${encodeURIComponent(responseId ?? "")}/${command}`,
+        )
+      : apiUrl(`/api/scenario/${command}`),
+  scenarioSocket: () => wsUrl("/ws/scenario"),
+
+  // ---- system + video sensor lab ----
   health: () => apiUrl("/api/health"),
   telemetry: () => apiUrl("/api/telemetry"),
   events: () => apiUrl("/api/events"),

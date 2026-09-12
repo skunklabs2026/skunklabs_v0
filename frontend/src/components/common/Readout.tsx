@@ -36,7 +36,7 @@ export function Dot({ ok, label }: { ok: boolean; label: string }) {
  * Three-state status dot.
  *
  * "unknown" is a first-class tone, not a shade of bad. A canister with no
- * power monitor is not unhealthy — it has nothing to report — and colouring
+ * power monitor is not unhealthy - it has nothing to report - and colouring
  * that red would train an operator to ignore red.
  */
 export type Tone = "ok" | "bad" | "unknown";

@@ -1,44 +1,78 @@
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { useDeviceLocation } from "./app/useDeviceLocation";
+import { useRoute, type Route } from "./app/useRoute";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
-import { OperatorScreen } from "./screens/OperatorScreen";
-import { SetupScreen } from "./screens/SetupScreen";
-import { useTelemetry } from "./hooks/useTelemetry";
+import { MissionBar } from "./components/shell/MissionBar";
+import { TopBar } from "./components/shell/TopBar";
+import { ScenarioStoreProvider, useScenarioStore } from "./scenario/hooks";
+import { scenarioStore } from "./scenario/instance";
+import { MapView } from "./views/MapView";
+
+// three.js is only needed by the launcher view; keep it out of the first load.
+const loadLauncherView = () => import("./views/LauncherView");
+const LauncherView = lazy(loadLauncherView);
+const SensorLab = lazy(() => import("./screens/SensorLab"));
 
 /**
- * Routes between the two screens.
+ * The SkunkLabs operator interface: two views over one mission state.
  *
- * The app opens on Mission Setup: load footage, confirm the detector is
- * seeing it, then begin. Nothing runs on the console until the operator has
- * chosen and verified a source.
+ *   /map       what threatens the protected site, and how the defense responds
+ *   /launcher  what a node is doing, and what response is being authorized
  *
- * Telemetry is subscribed here rather than per screen, so switching screens
- * never drops and re-opens the socket.
+ * plus the legacy video console at /sensor-lab, deliberately unlinked.
  */
 export default function App() {
-  const { telemetry, events, connected, authorize, reset } = useTelemetry();
-  const [started, setStarted] = useState(false);
+  const route = useRoute();
 
-  const begin = useCallback(() => {
-    // Start from a clean slate, so the operator watches a fresh sequence
-    // rather than whatever accumulated during setup.
-    void reset();
-    setStarted(true);
-  }, [reset]);
+  if (route === "sensor-lab") {
+    return (
+      <Suspense fallback={null}>
+        <SensorLab />
+      </Suspense>
+    );
+  }
+  return (
+    <ScenarioStoreProvider value={scenarioStore}>
+      <Console route={route} />
+    </ScenarioStoreProvider>
+  );
+}
+
+function Console({ route }: { route: Exclude<Route, "sensor-lab"> }) {
+  const store = useScenarioStore();
+
+  // One live feed for the whole console, so switching views never drops it.
+  useEffect(() => store.connect(), [store]);
+
+  // Centre the protected site on this device.
+  useDeviceLocation();
+
+  // Fetch the 3D chunk in the background so opening the launcher is instant.
+  useEffect(() => {
+    const id = window.setTimeout(() => void loadLauncherView(), 800);
+    return () => window.clearTimeout(id);
+  }, []);
 
   return (
-    <ErrorBoundary label="Console">
-      {started ? (
-        <OperatorScreen
-          telemetry={telemetry}
-          events={events}
-          connected={connected}
-          onAuthorize={() => void authorize()}
-          onReset={() => void reset()}
-          onChangeSource={() => setStarted(false)}
-        />
-      ) : (
-        <SetupScreen telemetry={telemetry} connected={connected} onBegin={begin} />
-      )}
-    </ErrorBoundary>
+    <div className="c-console">
+      <TopBar route={route} />
+      <main className="c-main">
+        <ErrorBoundary
+          key={route}
+          label={route === "launcher" ? "Launcher view" : "Map view"}
+        >
+          {route === "launcher" ? (
+            <Suspense
+              fallback={<div className="c-overlay">Loading launcher view…</div>}
+            >
+              <LauncherView />
+            </Suspense>
+          ) : (
+            <MapView />
+          )}
+        </ErrorBoundary>
+      </main>
+      <MissionBar />
+    </div>
   );
 }
