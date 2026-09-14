@@ -1,6 +1,6 @@
 """Simulated interceptor flight.
 
->>> SAFETY SCOPE <<<
+=== SAFETY SCOPE ===
 This is an ANIMATION MODEL. It advances a marker along a line in normalised
 image coordinates so the operator can see that an engagement was ordered and
 watch it play out. It commands nothing, controls nothing, and is not a

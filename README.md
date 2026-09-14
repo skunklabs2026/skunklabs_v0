@@ -1,11 +1,20 @@
 # SkunkLabs MVP V0
 
+[![Release](https://img.shields.io/github/v/release/skunklabs2026/skunklabs_v0?sort=semver)](https://github.com/skunklabs2026/skunklabs_v0/releases)
+
+[![Python versions](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/)
+[![CI](https://github.com/skunklabs2026/skunklabs_v0/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/skunklabs2026/skunklabs_v0/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/skunklabs2026/skunklabs_v0/branch/main/graph/badge.svg)](https://codecov.io/gh/skunklabs2026/skunklabs_v0)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg?logo=ruff)](https://github.com/astral-sh/ruff)
+[![CodeFactor](https://www.codefactor.io/repository/github/skunklabs2026/skunklabs_v0/badge)](https://www.codefactor.io/repository/github/skunklabs2026/skunklabs_v0)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/skunklabs2026/skunklabs_v0/badge)](https://scorecard.dev/viewer/?uri=github.com/skunklabs2026/skunklabs_v0)
+
 Local detection, tracking and operator engagement demo.
 
 One screen shows a sensor feed and walks a canister through the operational
 sequence:
 
-```
+```text
 SEARCH → DETECT → TRACK → CONFIRM → FOLLOW → AUTHORIZE → ACTUATE
 ```
 
@@ -41,7 +50,8 @@ top bar returns to setup at any time.
 make setup && make demo
 ```
 
-`make setup` creates the virtualenv and installs both halves; `make demo`
+`make setup` creates the virtualenv from `uv.lock` (Python version from
+`.python-version`) and installs both halves; `make demo`
 starts the backend and the operator UI, waits for both to be healthy,
 generates the demo clip on first run, and opens the screen.
 
@@ -51,9 +61,11 @@ generates the demo clip on first run, and opens the screen.
 | --- | --- |
 | `make demo` | backend + UI together (same as `./run_demo.sh`) |
 | `make test` | the pytest suite |
-| `make check` | lint + typecheck + tests — **run before opening a PR** |
+| `make check` | every gate CI runs — **run before opening a PR** |
 | `make format` | auto-fix Python and TypeScript formatting |
+| `make security` | bandit, pip-audit and npm audit |
 | `make verify` | drive the pipeline headlessly through the full sequence |
+| `make lock` | re-resolve `uv.lock` after a dependency change |
 | `make build` | production frontend build, served by the backend at :8000 |
 
 If you would rather not use `make`, every target is one or two plain commands —
@@ -65,7 +77,8 @@ open the `Makefile` and copy the line.
 
 - **One formatter per language, no debates.** `ruff` for Python, `eslint` +
   `prettier` for TypeScript, all configured in-repo. `make format` fixes;
-  `make check` is what CI should run.
+  `make check` is exactly what CI runs — each CI job invokes one of its
+  targets, so the two cannot drift.
 - **Types cross the boundary.** `frontend/src/types.ts` is generated from
   `backend/schemas.py` — after changing a schema, run
   `.venv/bin/python scripts/gen_types.py`. Never hand-edit it.
@@ -203,7 +216,7 @@ Ultralytics YOLO26n, per the reference document. Requires a one-time ~2 GB
 install; inference itself is fully local and offline.
 
 ```bash
-.venv/bin/pip install -r requirements-yolo.txt
+make setup-yolo
 SKUNK_DETECTOR=yolo ./run_demo.sh
 ```
 
@@ -273,7 +286,7 @@ Angular rate becomes a speed only once you know the range, and range follows
 from apparent size *if you assume the real size*. That assumption is what the
 classification supplies:
 
-```
+```text
 an FPV quad  (~0.35 m) subtending 20 px is close  and slow
 a fixed-wing (~2.5 m)  subtending 20 px is far    and fast
 ```
@@ -390,8 +403,19 @@ Every tunable lives in `backend/config/settings.py`. Override with
 | `SKUNK_LAUNCH_POINT_X/Y` | `0.5` / `1.0` | Canister position (bottom centre) |
 | `SKUNK_INTERCEPT_MIN_CONFIDENCE` | `0.25` | Min prediction confidence for an estimate |
 | `SKUNK_MAX_UPLOAD_MB` | `2048` | Upload size limit |
+| `SKUNK_HOST` | `127.0.0.1` | Bind address — **see the caveat below** |
 | `SKUNK_PORT` | `8000` | Backend port |
 | `SKUNK_LOG_LEVEL` | `INFO` | Logging level |
+
+> **`SKUNK_HOST` caveat.** The default binds loopback, and the rest of the
+> demo's threat model assumes it. `POST /api/source/video` accepts any
+> absolute path on the host by design (so footage need not be copied into the
+> repo) and answers whether that path exists, is a regular file and decodes as
+> video. From `127.0.0.1` that is a convenience; on `0.0.0.0` it is a
+> filesystem probe offered to the whole network. Uploads are separately
+> guarded — `safe_upload_path()` blocks traversal and `SKUNK_MAX_UPLOAD_MB`
+> caps size — but the path-selection endpoint is not, and is not meant to be.
+> Do not expose this demo beyond localhost.
 
 Track association (`SKUNK_TRACK_IOU_THRESHOLD`, `SKUNK_TRACK_MAX_AGE`,
 `SKUNK_TRACK_MIN_HITS`) and motion-detector tuning
@@ -401,7 +425,7 @@ Track association (`SKUNK_TRACK_IOU_THRESHOLD`, `SKUNK_TRACK_MAX_AGE`,
 
 ## Architecture
 
-```
+```text
 VIDEO SOURCE      backend/video/source.py       FileVideoSource | CameraVideoSource
       ↓
 DETECTOR          backend/vision/detector.py    MotionDetector | YoloDetector
@@ -494,11 +518,12 @@ them at any window size without knowing the source resolution.
 | Framework | Layer | Purpose | Manual Run Command |
 |---|---|---|---|
 | **pytest** | Backend (Python) | Unit and integration testing for Python code. Tests state machine transitions, API endpoints, vision pipeline, tracking logic, and end-to-end flows. | `make test-backend` or `.venv/bin/python -m pytest` |
-| **pytest-cov** | Backend (Python) | Code coverage reporting for pytest. Enforces 90% minimum coverage. | `make test-cov` (includes both backend and frontend) |
-| **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. Native ESM support with Jest-compatible API. Runs component and utility tests. | `make test-frontend` or `cd frontend && npm run test` |
-| **React Testing Library** | Frontend (TypeScript) | Testing utilities for React components. Encourages testing components as users interact with them rather than implementation details. | Used via Vitest: `cd frontend && npm run test` |
-| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. Enforces 90% minimum coverage. | `cd frontend && npm run test:cov` |
-| **rhiza** | Backend (Python) | Template-driven testing infrastructure from [Jebel-Quant/rhiza](https://github.com/Jebel-Quant/rhiza). Provides standardized pytest configuration, pre-commit hooks, and CI/CD workflows. | Configured via `.rhiza/template.yml` |
+| **pytest-cov** | Backend (Python) | Branch-coverage reporting for pytest. Fails under 87%. | `make test-cov` (includes both backend and frontend) |
+| **mypy** | Backend (Python) | Static type checking over `backend/`. | `make typecheck-backend` |
+| **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. Covers the `api/` layer, display formatting, and one UI primitive. | `make test-frontend` or `cd frontend && npm run test` |
+| **React Testing Library** | Frontend (TypeScript) | Component-rendering utilities. Currently used by a single test file (`Readout.test.tsx`). | Used via Vitest: `cd frontend && npm run test` |
+| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. Holds `src/api/**` at 90%; the rest at a measured floor. | `cd frontend && npm run test:cov` |
+| **bandit / pip-audit / npm audit** | Both | Code and dependency vulnerability scanning. | `make security` |
 
 ### Running Tests
 
@@ -510,8 +535,24 @@ make test-cov          # Both with coverage reports
 make test-frontend-watch  # Frontend in watch mode (for development)
 ```
 
-**Coverage requirement:** Both backend and frontend enforce a minimum 90% code
-coverage. The coverage check will fail if coverage drops below this threshold.
+**Coverage requirements.** The two sides are held to different bars, and the
+numbers below are the ones actually enforced — not aspirations:
+
+| Scope | Enforced | Actual | Where |
+|---|---|---|---|
+| `backend/` | 87% branch | 88.3% | `[tool.coverage.report] fail_under` |
+| `frontend/src/api/**` | 90% | ~99% | `frontend/vite.config.ts` |
+| rest of `frontend/src` | 20% stmts / 12% branch | ~22% / ~13% | `frontend/vite.config.ts` |
+
+The frontend floor is low because it is honest. The React component and hook
+layers are largely untested; the `api/` layer — the contract with the backend
+— is not. Both gates fail the build on a drop, so the floor is a ratchet to
+raise as tests land, not a target to design to.
+
+The backend figure is **branch** coverage, which is the informative number in
+a codebase this full of state-machine conditionals. The YOLO detector is
+excluded (`# pragma: no cover`): it needs the optional ~2 GB extra that CI
+does not install, so counting it would report a permanently unfixable gap.
 
 ### Pre-commit Hooks
 
@@ -529,21 +570,35 @@ commit. Commits will be blocked if any check fails.
 GitHub Actions runs all checks automatically on push to `main` and on pull
 requests. The workflow (`.github/workflows/ci.yml`) includes:
 
-| Job | Description |
-|---|---|
-| `lint` | Ruff (Python) + ESLint/Prettier (TypeScript) |
-| `typecheck` | TypeScript type checking |
-| `test-backend` | pytest with coverage (90% threshold) |
-| `test-frontend` | Vitest with coverage (90% threshold) |
-| `depcheck` | Unused dependency detection |
+Every job invokes a `make` target rather than repeating its commands, so
+`make check` and CI cannot drift apart:
+
+| Job | Runs | Description |
+|---|---|---|
+| `lint` | `make lint` | Ruff (Python) + ESLint/Prettier (TypeScript) |
+| `typecheck` | `make typecheck` | mypy (Python) + `tsc` (TypeScript) |
+| `test-backend` | `make test-backend-cov` | pytest with branch coverage (87% threshold) |
+| `test-frontend` | `make test-frontend-cov` | Vitest with coverage |
+| `depcheck` | `make depcheck` | Unused dependency detection |
+| `verify` | `make verify` | Headless end-to-end run over the demo clip |
+| `security` | `make security` | bandit, pip-audit and npm audit |
+
+Third-party actions are pinned to commit SHAs rather than moving major tags;
+Dependabot (`.github/dependabot.yml`) keeps them, and the `uv`/`npm`
+dependency sets, current.
 
 ### Backend Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -q
+make test-backend
 ```
 
-146 tests covering state transitions, detection→tracking, track loss and
+Use the `make` target rather than calling pytest directly: it generates the
+three synthetic clips the suite replays if they are missing. Without them 18
+tests skip silently and backend coverage reads 22 points low — which is
+exactly how CI failed the first time this gate was wired up.
+
+152 tests (plus doctests in `backend/mission/`) covering state transitions, detection→tracking, track loss and
 recovery, the confirmation rules, the authorization interlock (including that
 actuation is impossible without it), reset and repeatability, tracker ID
 persistence, schema serialisation, trajectory fitting and
@@ -558,8 +613,11 @@ HTTP API and WebSocket — including uploading a clip and switching to it.
 cd frontend && npm run test
 ```
 
-Component tests using Vitest + React Testing Library covering UI primitives
-and component behavior.
+Vitest covers the `api/` layer end to end — every endpoint path, the HTTP
+client's error handling, and the XHR upload path — plus the display formatting
+helpers and one UI primitive (`Readout`). The screens, hooks and remaining
+components have no tests yet; the coverage floor above reflects that rather
+than hiding it.
 
 Vision *accuracy* is deliberately not unit-tested; for that, run the headless
 pipeline check against real footage:
@@ -583,7 +641,7 @@ first whenever something misbehaves.
 | No detections | Background model still warming (12 frames), or the object is outside the motion area bounds — see `SKUNK_MOTION_MIN_AREA_FRAC` |
 | Never reaches THREAT_CONFIRMED | Confidence below `SKUNK_CONFIRMATION_CONFIDENCE`, or track not held for `SKUNK_CONFIRMATION_TIME`. The banner names the blocking rule |
 | AUTHORIZE stays greyed out | By design — it arms only in `AWAITING_AUTHORIZATION` |
-| YOLO won't load | Run `pip install -r requirements-yolo.txt`. The backend falls back to `motion` and logs why |
+| YOLO won't load | Run `make setup-yolo`. The backend falls back to `motion` and logs why |
 | Whole frame lights up with boxes | `motion` detector on handheld/panning footage. Switch to `yolo` in the Input panel |
 | Uploaded clip rejected | Not decodable by OpenCV. Re-encode as H.264 MP4 |
 | `NO SOLUTION` for intercept | Track too noisy (low confidence), or the target is unreachable within the horizon at `SKUNK_INTERCEPTOR_SPEED` |
@@ -608,7 +666,7 @@ not be used for projectile firing or weapon release.
 
 ## Repository layout
 
-```
+```text
 backend/
   config/settings.py        all tunables
   schemas.py                canonical API contract

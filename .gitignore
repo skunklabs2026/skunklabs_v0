@@ -27,7 +27,11 @@ tsconfig.tsbuildinfo
 
 # Coverage
 .coverage
+.coverage.*
+".coverage 2"
+coverage.xml
 htmlcov/
+frontend/coverage/
 
 # OS
 .DS_Store

@@ -9,7 +9,7 @@ Two deliberately simple, deterministic pieces of maths:
                        speed, finds the earliest point where the two could
                        meet.
 
->>> SCOPE <<<
+=== SCOPE ===
 This works entirely in the *image plane*, in normalised (0..1) frame
 coordinates. It is a kinematic extrapolation of pixel motion for display, not
 a flight model, not a guidance law, and not a firing solution. There is no
@@ -90,6 +90,33 @@ class TrajectoryPredictor:
         ahead and trust it more; a multirotor can turn on the spot, so the
         horizon shortens and confidence drops. Extrapolating a quad as far as
         a cruise missile would draw a confident line to nowhere.
+
+        A steady rightward drift across the frame, sampled at 10 Hz, fits
+        cleanly and extrapolates two seconds ahead:
+
+        >>> drift = [Observation(t=i * 0.1, x=0.20 + 0.02 * i, y=0.5) for i in range(10)]
+        >>> predictor = TrajectoryPredictor()
+        >>> fit = predictor.predict(drift)
+        >>> fit.valid, round(fit.velocity.speed, 2), round(fit.confidence, 2)
+        (True, 0.2, 0.85)
+        >>> round(fit.points[-1].x, 2), round(fit.points[-1].t, 1)
+        (0.78, 2.0)
+
+        The same motion classified as a multirotor is extrapolated less far
+        and trusted less, because a quad can invalidate a straight line:
+
+        >>> quad = predictor.predict(drift, horizon_scale=0.6, confidence_scale=0.75)
+        >>> quad.horizon, round(quad.confidence, 2)
+        (1.2, 0.64)
+
+        Two cases refuse to predict at all rather than amplify noise — too
+        little history, and a target that has not actually moved:
+
+        >>> predictor.predict(drift[:4]).valid
+        False
+        >>> still = [Observation(t=i * 0.1, x=0.5, y=0.5) for i in range(10)]
+        >>> predictor.predict(still).valid
+        False
         """
         horizon = max(0.2, self.horizon * horizon_scale)
 

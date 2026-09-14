@@ -251,7 +251,7 @@ class InterceptorPhase(str, Enum):
 class InterceptorState(BaseModel):
     """The simulated interceptor, for display.
 
-    >>> SAFETY <<< This describes an animation and a log entry. No physical
+    === SAFETY === This describes an animation and a log entry. No physical
     device is commanded, and nothing here constitutes guidance.
     """
 
