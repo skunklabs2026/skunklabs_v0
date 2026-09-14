@@ -1,5 +1,14 @@
 # SkunkLabs MVP V0
 
+[![Release](https://img.shields.io/github/v/release/GianScala/skunklabs_v0?sort=semver)](https://github.com/GianScala/skunklabs_v0/releases)
+
+[![Python versions](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/)
+[![CI](https://github.com/GianScala/skunklabs_v0/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/GianScala/skunklabs_v0/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/GianScala/skunklabs_v0/branch/main/graph/badge.svg)](https://codecov.io/gh/GianScala/skunklabs_v0)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg?logo=ruff)](https://github.com/astral-sh/ruff)
+[![CodeFactor](https://www.codefactor.io/repository/github/GianScala/skunklabs_v0/badge)](https://www.codefactor.io/repository/github/GianScala/skunklabs_v0)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/GianScala/skunklabs_v0/badge)](https://scorecard.dev/viewer/?uri=github.com/GianScala/skunklabs_v0)
+
 Local detection, tracking and operator engagement demo.
 
 One screen shows a sensor feed and walks a canister through the operational
@@ -498,7 +507,6 @@ them at any window size without knowing the source resolution.
 | **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. Native ESM support with Jest-compatible API. Runs component and utility tests. | `make test-frontend` or `cd frontend && npm run test` |
 | **React Testing Library** | Frontend (TypeScript) | Testing utilities for React components. Encourages testing components as users interact with them rather than implementation details. | Used via Vitest: `cd frontend && npm run test` |
 | **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. Enforces 90% minimum coverage. | `cd frontend && npm run test:cov` |
-| **rhiza** | Backend (Python) | Template-driven testing infrastructure from [Jebel-Quant/rhiza](https://github.com/Jebel-Quant/rhiza). Provides standardized pytest configuration, pre-commit hooks, and CI/CD workflows. | Configured via `.rhiza/template.yml` |
 
 ### Running Tests
 
