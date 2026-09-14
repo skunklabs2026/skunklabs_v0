@@ -182,6 +182,10 @@ class Settings(BaseSettings):
     actuator_duration: float = 1.6
 
     # ---------------- Server ----------------
+    # Loopback by design, not by accident. POST /api/source/video accepts any
+    # absolute path on this machine and reports whether it exists and decodes
+    # — harmless from localhost, a file probe from the network. Changing this
+    # to 0.0.0.0 exposes that endpoint; see README, "Configuration".
     host: str = "127.0.0.1"
     port: int = 8000
     # Origins allowed to call the API. The Vite dev server runs on 5173.

@@ -57,7 +57,11 @@ _TRACKING_STATES = frozenset(
     }
 )
 
-EventEmitter = Callable[[EventKind, str], None]
+# Return type is `object`, not `None`: the state machine never looks at
+# what an emitter returns, and narrowing it to None would reject any
+# emitter that happens to return something — which is exactly what the
+# pipeline's own EventEmitter protocol does.
+EventEmitter = Callable[[EventKind, str], object]
 
 
 @dataclass

@@ -12,10 +12,11 @@ the working directory and the flags, and they are all safe to re-run.
 | --- | --- |
 | `make help` | list every target (the default goal) |
 | `make setup` | `setup-backend` + `setup-frontend` — the first-run command |
-| `make setup-backend` | create `.venv` (uv, Python 3.11) and `uv pip install -e ".[dev]"` |
+| `make setup-backend` | `uv sync --extra dev` — installs from `uv.lock` |
 | `make setup-frontend` | `npm install` in `frontend/` |
 | `make setup-hooks` | install the pre-commit hooks |
 | `make setup-yolo` | add the optional neural detector (`.[yolo]`, ~2 GB) |
+| `make lock` | re-resolve `uv.lock` after changing a dependency |
 | `make demo` | backend + UI together (`./run_demo.sh`) |
 | `make dev-backend` | uvicorn with autoreload on :8000 |
 | `make dev-frontend` | Vite dev server only |
@@ -27,15 +28,32 @@ the working directory and the flags, and they are all safe to re-run.
 | `make lint` | `ruff check` + `ruff format --check` on `backend tests scripts`, then ESLint |
 | `make format` | auto-fix Python (ruff) and TypeScript formatting |
 | `make fmt-frontend` | frontend formatting only |
-| `make typecheck` | TypeScript type-check (`typecheck-frontend` is an alias) |
+| `make typecheck` | mypy over `backend/` + `tsc` over `frontend/` |
+| `make typecheck-backend` | mypy only |
+| `make typecheck-frontend` | `tsc` only |
+| `make security` | bandit + pip-audit + `npm audit` |
 | `make depcheck` | unused/missing frontend dependencies |
-| `make check` | `lint typecheck test-backend test-frontend` — **run before opening a PR** |
+| `make check` | `lint typecheck test-backend test-frontend depcheck verify security` — **run before opening a PR**, and exactly what CI runs |
 | `make build` | production frontend build, served by the backend at :8000 |
 | `make verify` | drive the pipeline headlessly through the full mission sequence |
 | `make clean` | remove caches and build output |
 
-There is no `typecheck` for Python in this repo — `make typecheck` is the
-frontend only. Python quality is `ruff` plus the pytest suite.
+Python quality is `ruff` (lint/format), `mypy` (types, `[tool.mypy]` in
+`pyproject.toml`, scoped to `backend/`), the pytest suite, and `bandit` +
+`pip-audit`. `scripts/` is linted and scanned but not yet type-checked — three
+opencv/numpy stub gaps stand in the way, noted in the mypy config.
+
+**The dependency set is locked.** `uv.lock` is committed and is the only
+pinned path — there is no `requirements.txt`. Change a version in
+`pyproject.toml`, then run `make lock`. `[tool.uv] constraint-dependencies`
+carries floors on *transitive* packages that a direct pin cannot reach; each
+entry names the advisory that forced it, and `make security` is what tells you
+when one is needed or can be dropped.
+
+Every CI job in `.github/workflows/ci.yml` invokes a `make` target rather than
+repeating its commands, and third-party actions are pinned to commit SHAs. If
+you add a gate, add it to **both** the `check` target and a CI job — the
+comment above `check` says so too.
 
 Two generated/derived artefacts have their own scripts, and neither is
 hand-edited:
@@ -122,12 +140,21 @@ to. Do not re-add a `.rhiza/` directory in response to it.
   `test_trajectory.py`, `test_classification.py`, `test_video_library.py`.
   Shared fixtures go in `tests/conftest.py`. Frontend component tests live
   beside the components and run under Vitest.
-- **Coverage** is measured over `backend` only, with the threshold in
-  `[tool.coverage.report] fail_under`. Check the current value before claiming
-  a number — the README quotes 90% in several places.
+- **Coverage** is **branch** coverage over `backend` only, threshold in
+  `[tool.coverage.report] fail_under` (87, against ~88% actual). The frontend
+  has its own thresholds in `frontend/vite.config.ts`: `src/api/**` at 90%,
+  everything else at a low measured floor because the component and hook
+  layers are untested. Both floors are ratchets — raise them as tests land,
+  never lower one to make a red build green. Check the real value before
+  quoting a number anywhere.
 - **Vision accuracy is deliberately not unit-tested.** Use
   `scripts/verify_pipeline.py` against real footage instead of asserting on
-  detector output.
+  detector output. It runs in CI as the `verify` job (`make verify`), which
+  generates the demo clip first if it is missing.
+- **Docstring examples are executed.** `addopts` carries `--doctest-modules`
+  and `testpaths` includes `backend`, so a `>>>` in a docstring is a test.
+  That is why the safety banners use `=== SAFETY SCOPE ===` rather than
+  `>>> SAFETY SCOPE <<<`, which doctest parses as code and fails on.
 - **Lint/format is ruff only**, `line-length = 96`, `target-version = "py311"`,
   excluding `.venv`, `assets` and `frontend`. The `ignore` list in
   `pyproject.toml` is annotated with the reason for each entry — add a reason

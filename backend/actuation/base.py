@@ -1,6 +1,6 @@
 """Actuator interface.
 
->>> SAFETY SCOPE <<<
+=== SAFETY SCOPE ===
 V0 actuation is an abstract, benign demo event only: a UI cue, a log entry,
 and a WebSocket event. This interface exists so that a *safe test device*
 (an LED, a servo moving a lid, a GPIO test signal) can be attached later

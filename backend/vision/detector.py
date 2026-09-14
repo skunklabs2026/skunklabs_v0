@@ -229,7 +229,11 @@ class MotionDetector(Detector):
         return detections
 
 
-class YoloDetector(Detector):
+# Excluded from coverage: every line below needs the optional `.[yolo]` extra
+# (~2 GB of torch) plus a model file, neither of which CI installs. Counting
+# it would mean reporting a permanent, unfixable gap as if it were untested
+# work. The motion detector above is the path the demo and the suite exercise.
+class YoloDetector(Detector):  # pragma: no cover
     """Ultralytics YOLO detector (YOLO26n baseline).
 
     COCO-pretrained models have no `drone` class, so detections whose label
@@ -267,8 +271,10 @@ class YoloDetector(Detector):
             # portable and still real-time for the nano model.
             if torch.backends.mps.is_available():
                 return "mps"
-        except Exception:
-            pass
+        except Exception as exc:
+            # CPU is always a valid answer here, but swallowing the reason
+            # silently makes "why is this slow?" unanswerable.
+            log.debug("No MPS device (%s); using CPU", exc)
         return "cpu"
 
     def _load(self) -> None:

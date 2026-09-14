@@ -4,13 +4,18 @@
 #
 # Every target is safe to re-run.
 
-SHELL    := /bin/bash
-VENV     := .venv
-FRONTEND := frontend
+SHELL      := /bin/bash
+VENV       := .venv
+FRONTEND   := frontend
+NOTEBOOKS  := backend/notebooks
+DEMO_VIDEO := assets/videos/demo_drone.mp4
 
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo demo dev-backend dev-frontend \
-        test test-cov lint format fmt-frontend typecheck typecheck-frontend depcheck check build clean
+.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo lock demo dev-backend \
+        dev-frontend demo-video marimo marimo-run test test-backend test-frontend test-cov \
+        test-backend-cov test-frontend-cov test-frontend-watch lint format fmt-frontend \
+        lint-backend lint-frontend typecheck typecheck-backend typecheck-frontend \
+        depcheck security verify check build clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -21,9 +26,11 @@ help: ## Show this help
 setup: setup-backend setup-frontend ## Install everything (first-run command)
 	@echo "Ready. Run: make demo"
 
-setup-backend: ## Install backend + dev dependencies
-	@test -d $(VENV) || uv venv $(VENV) --python 3.11
-	uv pip install -e ".[dev]"
+# uv reads .python-version, so the interpreter is declared in exactly one
+# place. `uv sync` installs the locked versions rather than re-resolving, so a
+# fresh checkout gets the environment CI got.
+setup-backend: ## Install backend + dev dependencies from uv.lock
+	uv sync --extra dev
 
 setup-frontend: ## Install frontend dependencies
 	cd $(FRONTEND) && npm install
@@ -32,7 +39,11 @@ setup-hooks: ## Install pre-commit hooks (runs checks on every commit)
 	uvx pre-commit install
 
 setup-yolo: ## Add the optional neural detector (~2 GB download)
-	uv pip install -e ".[yolo]"
+	uv sync --extra dev --extra yolo
+
+lock: ## Re-resolve and rewrite uv.lock after a dependency change
+	uv lock
+	@echo "Lockfile updated. Run 'make setup-backend' to install it."
 
 # ---------------------------------------------------------------- running
 
@@ -44,6 +55,24 @@ dev-backend: ## Backend only, with autoreload
 
 dev-frontend: ## Frontend dev server only
 	cd $(FRONTEND) && npm run dev
+
+# The clip is synthesised, not committed (assets/videos/*.mp4 is gitignored),
+# so anything that replays it has to be able to produce it first.
+demo-video: $(DEMO_VIDEO)
+$(DEMO_VIDEO):
+	$(VENV)/bin/python scripts/make_demo_video.py
+
+# ---------------------------------------------------------------- notebooks
+
+# Notebooks live in backend/notebooks/ so they can `import backend.*` directly
+# — the package is installed editable by `make setup-backend`, so a notebook
+# exercises the same code the pipeline runs, not a copy of it.
+marimo: ## Open the marimo notebook editor on backend/notebooks/
+	$(VENV)/bin/marimo edit $(NOTEBOOKS)
+
+marimo-run: ## Serve a notebook read-only as an app (make marimo-run NB=foo.py)
+	@test -n "$(NB)" || { echo "Usage: make marimo-run NB=<file.py>"; exit 2; }
+	$(VENV)/bin/marimo run $(NOTEBOOKS)/$(NB)
 
 # ---------------------------------------------------------------- quality
 
@@ -57,36 +86,57 @@ test-backend: ## Run the backend test suite only
 test-frontend: ## Run the frontend test suite only
 	cd $(FRONTEND) && npm run test
 
-test-cov: ## Run all tests with coverage reports
-	$(VENV)/bin/pytest --cov=backend --cov-report=term-missing
+test-cov: test-backend-cov test-frontend-cov ## Run all tests with coverage reports
+
+test-backend-cov: ## Backend tests with coverage (term + xml for Codecov)
+	$(VENV)/bin/pytest --cov=backend --cov-report=term-missing --cov-report=xml
+
+test-frontend-cov: ## Frontend tests with coverage
 	cd $(FRONTEND) && npm run test:cov
 
 test-frontend-watch: ## Run frontend tests in watch mode
 	cd $(FRONTEND) && npm run test:watch
 
-lint: ## Check Python and TypeScript
-	uvx ruff check backend tests scripts
-	uvx ruff format --check backend tests scripts
+lint: lint-backend lint-frontend ## Check Python and TypeScript
+
+# $(VENV)/bin/ruff, not `uvx ruff`: uvx resolves the newest release every
+# time, so the lint gate floated free of the pinned version and CI could go
+# red on a ruff release with no change here.
+lint-backend: ## Ruff check + format check
+	$(VENV)/bin/ruff check backend tests scripts
+	$(VENV)/bin/ruff format --check backend tests scripts
+
+lint-frontend: ## ESLint + Prettier check
 	cd $(FRONTEND) && npm run lint
 
 format: ## Auto-fix formatting and safe lint errors
-	uvx ruff check --fix backend tests scripts
-	uvx ruff format backend tests scripts
+	$(VENV)/bin/ruff check --fix backend tests scripts
+	$(VENV)/bin/ruff format backend tests scripts
 	cd $(FRONTEND) && npm run format
 
 fmt-frontend: ## Auto-fix frontend formatting only
 	cd $(FRONTEND) && npm run format
 
-typecheck: ## Type-check the frontend
-	cd $(FRONTEND) && npm run typecheck
+typecheck: typecheck-backend typecheck-frontend ## Type-check both halves
 
-typecheck-frontend: ## Type-check the frontend (alias)
+typecheck-backend: ## Type-check the backend (mypy; config in pyproject.toml)
+	$(VENV)/bin/mypy
+
+typecheck-frontend: ## Type-check the frontend
 	cd $(FRONTEND) && npm run typecheck
 
 depcheck: ## Check for unused/missing dependencies (frontend)
 	cd $(FRONTEND) && npm run depcheck
 
-check: lint typecheck test-backend test-frontend ## Everything CI runs — do this before a PR
+security: ## Scan Python and Node dependencies and code for known problems
+	$(VENV)/bin/bandit -c pyproject.toml -r backend scripts -q
+	$(VENV)/bin/pip-audit
+	cd $(FRONTEND) && npm audit --audit-level=high
+
+# Keep this list identical to the jobs in .github/workflows/ci.yml. Each CI
+# job invokes one of these targets, so the only way they can disagree is if a
+# job is added there without being added here.
+check: lint typecheck test-backend test-frontend depcheck verify security ## Everything CI runs — do this before a PR
 
 # ---------------------------------------------------------------- build
 
@@ -94,9 +144,10 @@ build: ## Production frontend build, served by the backend at :8000
 	cd $(FRONTEND) && npm run build
 	@echo "Built. Run 'make dev-backend' and open http://127.0.0.1:8000"
 
-verify: ## Drive the pipeline headlessly through the full mission sequence
-	$(VENV)/bin/python scripts/verify_pipeline.py
+verify: demo-video ## Drive the pipeline headlessly through the full mission sequence
+	$(VENV)/bin/python scripts/verify_pipeline.py --authorize
 
 clean: ## Remove caches and build output
 	find . -path ./$(VENV) -prune -o -name __pycache__ -type d -print0 | xargs -0 rm -rf
-	rm -rf .pytest_cache .ruff_cache $(FRONTEND)/dist
+	rm -rf .pytest_cache .ruff_cache .mypy_cache coverage.xml \
+	       $(FRONTEND)/dist $(FRONTEND)/coverage
