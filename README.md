@@ -518,11 +518,11 @@ them at any window size without knowing the source resolution.
 | Framework | Layer | Purpose | Manual Run Command |
 |---|---|---|---|
 | **pytest** | Backend (Python) | Unit and integration testing for Python code. Tests state machine transitions, API endpoints, vision pipeline, tracking logic, and end-to-end flows. | `make test-backend` or `.venv/bin/python -m pytest` |
-| **pytest-cov** | Backend (Python) | Branch-coverage reporting for pytest. Fails under 87%. | `make test-cov` (includes both backend and frontend) |
+| **pytest-cov** | Backend (Python) | Branch-coverage reporting for pytest. Fails under 90%. | `make test-cov` (includes both backend and frontend) |
 | **mypy** | Backend (Python) | Static type checking over `backend/`. | `make typecheck-backend` |
-| **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. Covers the `api/` layer, display formatting, and one UI primitive. | `make test-frontend` or `cd frontend && npm run test` |
-| **React Testing Library** | Frontend (TypeScript) | Component-rendering utilities. Currently used by a single test file (`Readout.test.tsx`). | Used via Vitest: `cd frontend && npm run test` |
-| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. Holds `src/api/**` at 90%; the rest at a measured floor. | `cd frontend && npm run test:cov` |
+| **Vitest** | Frontend (TypeScript) | Fast unit test runner for Vite projects. 367 tests across `api/`, the hooks, every component and both screens. | `make test-frontend` or `cd frontend && npm run test` |
+| **React Testing Library** | Frontend (TypeScript) | Component-rendering utilities, used by every component and screen suite. | Used via Vitest: `cd frontend && npm run test` |
+| **@vitest/coverage-v8** | Frontend (TypeScript) | Coverage reporting for Vitest using V8's built-in coverage. Fails under 90%. | `cd frontend && npm run test:cov` |
 | **bandit / pip-audit / npm audit** | Both | Code and dependency vulnerability scanning. | `make security` |
 
 ### Running Tests
@@ -535,24 +535,29 @@ make test-cov          # Both with coverage reports
 make test-frontend-watch  # Frontend in watch mode (for development)
 ```
 
-**Coverage requirements.** The two sides are held to different bars, and the
-numbers below are the ones actually enforced — not aspirations:
+**Coverage requirement: 90%, both sides, enforced.** The numbers below are
+what the gates actually check, and both fail the build on a drop:
 
 | Scope | Enforced | Actual | Where |
 |---|---|---|---|
-| `backend/` | 87% branch | 88.3% | `[tool.coverage.report] fail_under` |
-| `frontend/src/api/**` | 90% | ~99% | `frontend/vite.config.ts` |
-| rest of `frontend/src` | 20% stmts / 12% branch | ~22% / ~13% | `frontend/vite.config.ts` |
+| `backend/` | 90% branch | 93.1% | `[tool.coverage.report] fail_under` |
+| `frontend/src` | 90% stmts / branch / funcs / lines | 98.6 / 96.1 / 99.4 / 99.2 | `frontend/vite.config.ts` |
 
-The frontend floor is low because it is honest. The React component and hook
-layers are largely untested; the `api/` layer — the contract with the backend
-— is not. Both gates fail the build on a drop, so the floor is a ratchet to
-raise as tests land, not a target to design to.
+The backend figure is **branch** coverage, the informative number in a
+codebase this full of state-machine conditionals — statement coverage counts
+an `if` as covered the moment either side of it runs.
 
-The backend figure is **branch** coverage, which is the informative number in
-a codebase this full of state-machine conditionals. The YOLO detector is
-excluded (`# pragma: no cover`): it needs the optional ~2 GB extra that CI
-does not install, so counting it would report a permanently unfixable gap.
+Two things are deliberately excluded, both for the same reason: counting them
+would report a permanently unfixable gap rather than untested work.
+
+- **The YOLO detector** (`# pragma: no cover` on `YoloDetector`) needs the
+  optional ~2 GB extra, which CI does not install.
+- **`frontend/src/main.tsx`**, the bootstrap: it calls `createRoot` on a real
+  document and imports stylesheets, so a test of it would assert that React
+  mounts, not that this app works. Excluded like a `__main__` block.
+
+Vision *accuracy* is a third deliberate gap, and a more interesting one — see
+below.
 
 ### Pre-commit Hooks
 
@@ -577,8 +582,8 @@ Every job invokes a `make` target rather than repeating its commands, so
 |---|---|---|
 | `lint` | `make lint` | Ruff (Python) + ESLint/Prettier (TypeScript) |
 | `typecheck` | `make typecheck` | mypy (Python) + `tsc` (TypeScript) |
-| `test-backend` | `make test-backend-cov` | pytest with branch coverage (87% threshold) |
-| `test-frontend` | `make test-frontend-cov` | Vitest with coverage |
+| `test-backend` | `make test-backend-cov` | pytest with branch coverage (90% threshold) |
+| `test-frontend` | `make test-frontend-cov` | Vitest with coverage (90% threshold) |
 | `depcheck` | `make depcheck` | Unused dependency detection |
 | `verify` | `make verify` | Headless end-to-end run over the demo clip |
 | `security` | `make security` | bandit, pip-audit and npm audit |
@@ -598,7 +603,7 @@ three synthetic clips the suite replays if they are missing. Without them 18
 tests skip silently and backend coverage reads 22 points low — which is
 exactly how CI failed the first time this gate was wired up.
 
-152 tests (plus doctests in `backend/mission/`) covering state transitions, detection→tracking, track loss and
+210 tests (plus doctests in `backend/mission/`) covering state transitions, detection→tracking, track loss and
 recovery, the confirmation rules, the authorization interlock (including that
 actuation is impossible without it), reset and repeatability, tracker ID
 persistence, schema serialisation, trajectory fitting and
@@ -613,11 +618,22 @@ HTTP API and WebSocket — including uploading a clip and switching to it.
 cd frontend && npm run test
 ```
 
-Vitest covers the `api/` layer end to end — every endpoint path, the HTTP
-client's error handling, and the XHR upload path — plus the display formatting
-helpers and one UI primitive (`Readout`). The screens, hooks and remaining
-components have no tests yet; the coverage floor above reflects that rather
-than hiding it.
+367 tests, one suite per module:
+
+- **`api/`** — every endpoint path asserted literally, the HTTP client's
+  error-message contract (FastAPI's `detail`, pydantic's validation list, the
+  unreachable-backend case), and the XHR upload path including progress and
+  cancellation.
+- **`hooks/`** — the telemetry socket's reconnect and event-log capping, the
+  source hook's settle-refresh, the media query, and the launch cue and
+  authorize hotkey (which is gated exactly like the button — the keyboard is
+  not a way around the interlock).
+- **`components/`** and **`screens/`** — rendering, interaction, and the
+  states each panel is supposed to distinguish.
+
+Shared telemetry fixtures live in `src/test/factories.ts`, so a schema change
+(`types.ts` is generated from `backend/schemas.py`) breaks one file rather
+than every suite.
 
 Vision *accuracy* is deliberately not unit-tested; for that, run the headless
 pipeline check against real footage:

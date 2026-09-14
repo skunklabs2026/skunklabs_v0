@@ -96,10 +96,11 @@ omit = ["backend/__pycache__/*"]
 branch = true
 
 [tool.coverage.report]
-# Set from the measured branch figure (87.97%), a point below it so the gate
-# ratchets rather than flapping. Raise it when coverage rises; do not lower it
-# to make a red build green.
-fail_under = 87
+# 90% branch coverage, against a measured 93.08%. The frontend is held to the
+# same number in frontend/vite.config.ts, so "90% coverage" means one thing
+# across this repo rather than two. Raise it as coverage rises; never lower it
+# to make a red build green — a change that drops coverage owes a test.
+fail_under = 90
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
