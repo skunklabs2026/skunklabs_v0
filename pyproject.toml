@@ -38,7 +38,7 @@ dev = [
     # did not exist yet — so the pin and the config had silently diverged
     # while `uvx ruff` quietly used whatever was newest.
     "ruff==0.16.7",
-    "pre-commit==4.0.1",
+    "pre-commit==4.6.2",
     # Invoked, not imported — `make marimo` opens backend/notebooks/. Pinned
     # like everything else so a notebook that works here works in review.
     "marimo==0.24.2",
