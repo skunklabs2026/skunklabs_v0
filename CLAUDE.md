@@ -147,6 +147,10 @@ to. Do not re-add a `.rhiza/` directory in response to it.
   layers are untested. Both floors are ratchets — raise them as tests land,
   never lower one to make a red build green. Check the real value before
   quoting a number anywhere.
+- **The tests need the demo clips.** `tests/` skips ~18 tests when
+  `assets/videos/demo_{drone,multirotor,fixed_wing}.mp4` are absent — a silent
+  22-point drop in backend coverage. `make test-backend` depends on
+  `demo-video`, which generates them; never call `pytest` directly in CI.
 - **Vision accuracy is deliberately not unit-tested.** Use
   `scripts/verify_pipeline.py` against real footage instead of asserting on
   detector output. It runs in CI as the `verify` job (`make verify`), which

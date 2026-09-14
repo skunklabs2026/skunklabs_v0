@@ -540,7 +540,7 @@ numbers below are the ones actually enforced — not aspirations:
 
 | Scope | Enforced | Actual | Where |
 |---|---|---|---|
-| `backend/` | 87% branch | ~88% | `[tool.coverage.report] fail_under` |
+| `backend/` | 87% branch | 88.3% | `[tool.coverage.report] fail_under` |
 | `frontend/src/api/**` | 90% | ~99% | `frontend/vite.config.ts` |
 | rest of `frontend/src` | 20% stmts / 12% branch | ~22% / ~13% | `frontend/vite.config.ts` |
 
@@ -590,10 +590,15 @@ dependency sets, current.
 ### Backend Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -q
+make test-backend
 ```
 
-~150 tests (plus doctests in `backend/mission/`) covering state transitions, detection→tracking, track loss and
+Use the `make` target rather than calling pytest directly: it generates the
+three synthetic clips the suite replays if they are missing. Without them 18
+tests skip silently and backend coverage reads 22 points low — which is
+exactly how CI failed the first time this gate was wired up.
+
+152 tests (plus doctests in `backend/mission/`) covering state transitions, detection→tracking, track loss and
 recovery, the confirmation rules, the authorization interlock (including that
 actuation is impossible without it), reset and repeatability, tracker ID
 persistence, schema serialisation, trajectory fitting and

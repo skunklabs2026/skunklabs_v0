@@ -8,7 +8,12 @@ SHELL      := /bin/bash
 VENV       := .venv
 FRONTEND   := frontend
 NOTEBOOKS  := backend/notebooks
-DEMO_VIDEO := assets/videos/demo_drone.mp4
+VIDEO_DIR  := assets/videos
+# The suite skips ~18 tests when these are absent, which silently drops
+# backend coverage by 22 points — so they are a prerequisite of the test
+# targets, not something to remember to run.
+DEMO_VIDEO := $(VIDEO_DIR)/demo_drone.mp4
+DEMO_CLIPS := $(DEMO_VIDEO) $(VIDEO_DIR)/demo_multirotor.mp4 $(VIDEO_DIR)/demo_fixed_wing.mp4
 
 .DEFAULT_GOAL := help
 .PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo lock demo dev-backend \
@@ -58,9 +63,13 @@ dev-frontend: ## Frontend dev server only
 
 # The clip is synthesised, not committed (assets/videos/*.mp4 is gitignored),
 # so anything that replays it has to be able to produce it first.
-demo-video: $(DEMO_VIDEO)
+demo-video: $(DEMO_CLIPS) ## Generate the synthetic demo clips the tests replay
 $(DEMO_VIDEO):
-	$(VENV)/bin/python scripts/make_demo_video.py
+	$(VENV)/bin/python scripts/make_demo_video.py --output $@
+$(VIDEO_DIR)/demo_multirotor.mp4:
+	$(VENV)/bin/python scripts/make_demo_video.py --output $@ --platform multirotor
+$(VIDEO_DIR)/demo_fixed_wing.mp4:
+	$(VENV)/bin/python scripts/make_demo_video.py --output $@ --platform fixed_wing
 
 # ---------------------------------------------------------------- notebooks
 
@@ -76,11 +85,11 @@ marimo-run: ## Serve a notebook read-only as an app (make marimo-run NB=foo.py)
 
 # ---------------------------------------------------------------- quality
 
-test: ## Run both backend and frontend test suites
+test: demo-video ## Run both backend and frontend test suites
 	$(VENV)/bin/pytest
 	cd $(FRONTEND) && npm run test
 
-test-backend: ## Run the backend test suite only
+test-backend: demo-video ## Run the backend test suite only
 	$(VENV)/bin/pytest
 
 test-frontend: ## Run the frontend test suite only
@@ -88,7 +97,7 @@ test-frontend: ## Run the frontend test suite only
 
 test-cov: test-backend-cov test-frontend-cov ## Run all tests with coverage reports
 
-test-backend-cov: ## Backend tests with coverage (term + xml for Codecov)
+test-backend-cov: demo-video ## Backend tests with coverage (term + xml for Codecov)
 	$(VENV)/bin/pytest --cov=backend --cov-report=term-missing --cov-report=xml
 
 test-frontend-cov: ## Frontend tests with coverage
