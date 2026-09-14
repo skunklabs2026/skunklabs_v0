@@ -134,19 +134,27 @@ to. Do not re-add a `.rhiza/` directory in response to it.
 
 ## Conventions
 
+- **Frontend tests live beside the code they test**, with shared telemetry
+  fixtures in `frontend/src/test/factories.ts` — build test data from those
+  rather than hand-rolling objects, so a `types.ts` regeneration breaks one
+  file. `src/test/helpers.ts` has `expectRenderErrors()`, which silences
+  jsdom's stack traces for suites that throw during render on purpose; scope
+  it to those suites so an unexpected throw stays loud.
 - **Tests** live in `tests/` (`[tool.pytest.ini_options] testpaths = ["tests"]`,
   `addopts = "-q --strict-markers"`), one `test_*.py` per backend concern:
   `test_api.py`, `test_state_machine.py`, `test_rules.py`, `test_tracker.py`,
   `test_trajectory.py`, `test_classification.py`, `test_video_library.py`.
   Shared fixtures go in `tests/conftest.py`. Frontend component tests live
   beside the components and run under Vitest.
-- **Coverage** is **branch** coverage over `backend` only, threshold in
-  `[tool.coverage.report] fail_under` (87, against ~88% actual). The frontend
-  has its own thresholds in `frontend/vite.config.ts`: `src/api/**` at 90%,
-  everything else at a low measured floor because the component and hook
-  layers are untested. Both floors are ratchets — raise them as tests land,
-  never lower one to make a red build green. Check the real value before
-  quoting a number anywhere.
+- **Coverage is 90%, enforced on both sides.** Backend: **branch** coverage
+  over `backend`, `[tool.coverage.report] fail_under = 90` against ~93%
+  actual. Frontend: all four metrics at 90 in `frontend/vite.config.ts`,
+  against ~96-99%. Two exclusions, both because counting them would report a
+  permanently unfixable gap: `YoloDetector` (`# pragma: no cover`, needs the
+  2 GB extra CI does not install) and `frontend/src/main.tsx` (the bootstrap).
+  Raise the thresholds as coverage rises; never lower one to make a red build
+  green — a change that drops coverage owes a test. Check the real value
+  before quoting a number anywhere.
 - **The tests need the demo clips.** `tests/` skips ~18 tests when
   `assets/videos/demo_{drone,multirotor,fixed_wing}.mp4` are absent — a silent
   22-point drop in backend coverage. `make test-backend` depends on

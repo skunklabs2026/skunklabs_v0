@@ -15,6 +15,22 @@ updates:
       # and are never a runtime concern.
       dev-tooling:
         patterns: ["pytest*", "ruff", "mypy", "bandit", "pip-audit", "pre-commit", "marimo"]
+    ignore:
+      # ultralytics cannot be bumped while numpy is pinned at 2.1.3. On macOS
+      # it requires numpy <2.0 or >2.3.4, so every release after 8.4.123 makes
+      # the lockfile unresolvable and the whole uv job fails — taking the other
+      # Python updates down with it, which is why this is an ignore rather
+      # than a weekly red run.
+      #
+      # This unblocks itself: merging a numpy bump past 2.3.4 (Dependabot has
+      # already opened one) makes newer ultralytics resolvable, and this entry
+      # should be deleted at that point. Until then, bump it by hand against
+      # the constraint documented in pyproject.toml.
+      #
+      # Low risk to defer: ultralytics is behind the optional `.[yolo]` extra,
+      # is not installed in CI, and `make security` still audits it in any
+      # environment that does install it.
+      - dependency-name: "ultralytics"
 
   - package-ecosystem: "npm"
     directory: "/frontend"
