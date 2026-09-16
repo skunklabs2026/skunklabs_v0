@@ -16,8 +16,10 @@ DEMO_VIDEO := $(VIDEO_DIR)/demo_drone.mp4
 DEMO_CLIPS := $(DEMO_VIDEO) $(VIDEO_DIR)/demo_multirotor.mp4 $(VIDEO_DIR)/demo_fixed_wing.mp4
 
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo lock demo dev-backend \
-        dev-frontend demo-video marimo marimo-run test test-backend test-frontend test-cov \
+.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo setup-research lock \
+        demo dev-backend dev-frontend demo-video marimo marimo-run \
+        eda-notebook eda eda-sample eda-check \
+        test test-backend test-frontend test-cov \
         test-backend-cov test-frontend-cov test-frontend-watch lint format fmt-frontend \
         lint-backend lint-frontend typecheck typecheck-backend typecheck-frontend \
         depcheck security verify check build clean
@@ -49,6 +51,9 @@ setup-yolo: ## Add the optional neural detector (~2 GB download)
 lock: ## Re-resolve and rewrite uv.lock after a dependency change
 	uv lock
 	@echo "Lockfile updated. Run 'make setup-backend' to install it."
+
+setup-research: ## Add the notebook/EDA toolchain (marimo, pandas, matplotlib)
+	uv sync --extra dev --extra research
 
 # ---------------------------------------------------------------- running
 
@@ -82,6 +87,29 @@ marimo: ## Open the marimo notebook editor on backend/notebooks/
 marimo-run: ## Serve a notebook read-only as an app (make marimo-run NB=foo.py)
 	@test -n "$(NB)" || { echo "Usage: make marimo-run NB=<file.py>"; exit 2; }
 	$(VENV)/bin/marimo run $(NOTEBOOKS)/$(NB)
+
+# ---------------------------------------------------------------- research
+#
+# Offline dataset analysis, in the repo-root notebooks/ rather than
+# $(NOTEBOOKS): it imports nothing from backend/, and keeping it outside the
+# package keeps it out of the wheel and out of the coverage source. Needs
+# `make setup-research` first.
+
+eda-notebook: ## Open the marimo notebook browser on notebooks/
+	$(VENV)/bin/marimo edit notebooks/
+
+eda: ## Fetch everything the notebook needs cheaply (~18 MB, no bulk download)
+	$(VENV)/bin/python scripts/fetch_mmaud.py --download meta
+	$(VENV)/bin/python scripts/fetch_mmaud.py --index val
+	$(VENV)/bin/python scripts/fetch_mmaud.py --labels train
+
+eda-sample: ## Pull a small random sample of real frames for the plotting cells
+	$(VENV)/bin/python scripts/fetch_mmaud.py --sample val
+
+eda-check: ## Run the EDA notebook headlessly as a script, plus marimo's own checks
+	$(VENV)/bin/marimo check notebooks/01_mmaud_eda.py
+	$(VENV)/bin/python notebooks/01_mmaud_eda.py
+	@echo "EDA notebook executed cleanly"
 
 # ---------------------------------------------------------------- quality
 
@@ -158,5 +186,5 @@ verify: demo-video ## Drive the pipeline headlessly through the full mission seq
 
 clean: ## Remove caches and build output
 	find . -path ./$(VENV) -prune -o -name __pycache__ -type d -print0 | xargs -0 rm -rf
-	rm -rf .pytest_cache .ruff_cache .mypy_cache coverage.xml \
+	rm -rf .pytest_cache .ruff_cache .mypy_cache coverage.xml htmlcov \
 	       $(FRONTEND)/dist $(FRONTEND)/coverage

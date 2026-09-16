@@ -49,6 +49,18 @@ dev = [
     "bandit==1.9.4",
     "pip-audit==2.10.1",
 ]
+# Offline dataset analysis (repo-root notebooks/). Not needed to run the demo —
+# the core dependency list above stays at seven packages on purpose. marimo is
+# not repeated here: it is already a dev pin, and `make setup-research` syncs
+# both extras, so a second pin could only ever disagree with the first.
+research = [
+    "pandas==2.2.3",
+    # Already in the lock via ultralytics; pinning it lower here would drag the
+    # yolo extra down with it.
+    "matplotlib==3.11.2",
+    # 5.2.2 is the fix for PYSEC-2026-2158; `make security` fails on 5.2.0.
+    "gdown==5.2.2",
+]
 
 [project.scripts]
 skunklabs = "backend.main:main"

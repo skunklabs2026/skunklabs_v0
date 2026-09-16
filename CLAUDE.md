@@ -16,6 +16,7 @@ the working directory and the flags, and they are all safe to re-run.
 | `make setup-frontend` | `npm install` in `frontend/` |
 | `make setup-hooks` | install the pre-commit hooks |
 | `make setup-yolo` | add the optional neural detector (`.[yolo]`, ~2 GB) |
+| `make setup-research` | add the notebook/EDA toolchain (`.[research]`) |
 | `make lock` | re-resolve `uv.lock` after changing a dependency |
 | `make demo` | backend + UI together (`./run_demo.sh`) |
 | `make dev-backend` | uvicorn with autoreload on :8000 |
@@ -36,6 +37,12 @@ the working directory and the flags, and they are all safe to re-run.
 | `make check` | `lint typecheck test-backend test-frontend depcheck verify security` — **run before opening a PR**, and exactly what CI runs |
 | `make build` | production frontend build, served by the backend at :8000 |
 | `make verify` | drive the pipeline headlessly through the full mission sequence |
+| `make marimo` | marimo editor on `backend/notebooks/` (notebooks that import `backend.*`) |
+| `make marimo-run` | serve one of those read-only as an app (`NB=foo.py`) |
+| `make eda-notebook` | marimo notebook browser on the repo-root `notebooks/` |
+| `make eda` | fetch MMAUD metadata, archive index and all 40k labels (~18 MB) |
+| `make eda-sample` | fetch a small random sample of real frames |
+| `make eda-check` | `marimo check` + run the notebook headlessly as a script |
 | `make clean` | remove caches and build output |
 
 Python quality is `ruff` (lint/format), `mypy` (types, `[tool.mypy]` in
@@ -131,6 +138,69 @@ The `/rhiza:quality` command is still used periodically as an **advisory**
 scorecard — it assesses and proposes, it never applies. Treat its output as
 suggestions to weigh, not as drift to correct: there is no template to conform
 to. Do not re-add a `.rhiza/` directory in response to it.
+
+## Research notebooks
+
+There are two notebook homes, and the split is deliberate. `backend/notebooks/`
+is for notebooks that `import backend.*` — it is inside the installed package,
+so they exercise the same code the pipeline runs; `make marimo` opens it. The
+repo-root `notebooks/` is for offline dataset analysis that imports nothing
+from `backend/`, and it stays outside the package precisely so a notebook is
+never shipped in the wheel or counted against the 90% coverage gate
+(`[tool.coverage.run] source = ["backend"]` would otherwise include it).
+`make eda-notebook` opens that one.
+
+`notebooks/` holds offline dataset analysis. Nothing in `backend/` imports it,
+nothing in it runs during a demo, and it needs `make setup-research` first —
+the core dependency list stays at seven packages so "runs locally and offline"
+keeps meaning what it says.
+
+**Notebooks are [marimo](https://marimo.io), not Jupyter.** A marimo notebook
+is a plain `.py` file — it diffs, it has no stored outputs to strip, and
+`python notebooks/01_mmaud_eda.py` runs the whole thing headlessly, which is
+what `make eda-check` uses as a smoke test. `make eda-notebook` opens marimo's
+notebook browser rooted at `notebooks/`, so you pick a notebook
+from the menu rather than landing in one — add a second notebook and it shows
+up there with no Makefile change. Do not hand-edit the `@app.cell` scaffolding.
+
+Two marimo rules that shape how the cells are written:
+
+- **A name may only be defined by one cell.** Throwaways — figures, loop
+  variables, local helpers — are `_`-prefixed to make them cell-local. Only the
+  names later cells actually consume (`meta`, `segs`, `vel`, `R`, …) are global.
+- **The last expression is the cell's output.** Plotting cells end with `_fig`;
+  cells with several things to show use `mo.vstack([...])`.
+
+`notebooks/` stays **outside** every lint, coverage and packaging path: `make
+lint` covers `backend tests scripts`, coverage is measured over `backend` only,
+and `[tool.setuptools.packages.find] include = ["backend*"]`. marimo owns the
+file's formatting, so running ruff over it would just fight the editor. Real
+code therefore lives in `scripts/` — `mmaud_io.py` (reader + synthetic fixture)
+and `fetch_mmaud.py` (download helper) are both linted, and the notebook stays
+thin.
+
+- The dataset lives at `SKUNK_MMAUD_DIR`, default `assets/datasets/mmaud`,
+  gitignored like `assets/videos/`. It is **not** a `Settings` field — nothing
+  in `backend/` reads it, so a tunable there would be dead weight in the README
+  table and `.env.example`. Promote it if a trained model ever ships.
+- **Nothing bulk-downloads.** MMAUD's `train.zip` is 139.7 GB, but Google Drive
+  serves it with `Accept-Ranges: bytes`, so `scripts/mmaud_io.py` reads the
+  archives as random-access storage. `RemoteZip` parses the ZIP64 central
+  directory (~0.7-17 MB) for structure, sizes and every sensor timestamp;
+  `read_many()` coalesces adjacent members so the 81,400 label files come down
+  in **103 range requests, ~17 MB**. Sizes come from a ranged GET, never HEAD —
+  Drive answers HEAD on large files with an HTML interstitial and
+  `Content-Length: 0`.
+- `make eda` fetches the metadata, the archive index and all 40,800 labels
+  (~18 MB). `make eda-sample` pulls real frames for the plotting cells only.
+  Both are idempotent and cached; re-runs are offline.
+
+Scope: MMAUD is multi-modal (audio, image, LiDAR, radar), and
+`README.md` "What V0 is not" currently excludes *sensor fusion · radar ·
+production threat classification*. Analysing a dataset does not change what V0
+does, so that stands. But if a learned position/velocity model ever lands in
+`backend/`, amend that list and the guardrail above deliberately rather than
+letting the code contradict the docs.
 
 ## Conventions
 

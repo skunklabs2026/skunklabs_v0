@@ -6,13 +6,16 @@
 # deliberate here (fix on commit, verify in CI), but it does mean a passing
 # commit is not proof CI will pass. Run `make check` before opening a PR.
 repos:
-  # Python linting and formatting
+  # Python linting and formatting. notebooks/ is excluded on purpose: marimo
+  # owns those files' formatting, and `make lint` covers backend tests scripts.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.7  # keep in step with the ruff pin in pyproject.toml
     hooks:
       - id: ruff-check
         args: [--fix]
+        exclude: ^notebooks/
       - id: ruff-format
+        exclude: ^notebooks/
 
   # TypeScript/JavaScript linting and formatting
   - repo: local
