@@ -41,6 +41,12 @@ async def select_video(pipeline: PipelineDep, body: SelectVideoRequest) -> Comma
 
     Accepts any absolute local path, so footage does not have to be copied
     into the repository to be tested.
+
+    Trust boundary: that convenience is only safe because the server binds
+    loopback by default (`Settings.host = "127.0.0.1"`). This endpoint reports
+    whether a path exists, is a regular file, and decodes as video — a file
+    probe for anyone who can reach it. If you set `SKUNK_HOST=0.0.0.0`, you
+    have exposed that probe to the network.
     """
     try:
         path = pipeline.library.resolve(body.path)

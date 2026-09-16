@@ -3,7 +3,7 @@
 Deterministic, inspectable rules that decide when a track qualifies as a
 confirmed target *for demonstration purposes*.
 
->>> IMPORTANT SCOPE NOTE <<<
+=== IMPORTANT SCOPE NOTE ===
 This is demo logic. It is NOT a threat-identification capability and must not
 be described as one. It answers a narrow question — "has this track satisfied
 the pre-agreed demo criteria?" — using three transparent, configurable checks.
@@ -122,7 +122,18 @@ class ConfirmationOutcome:
 
     @property
     def summary(self) -> str:
-        """One line naming the rule currently blocking confirmation."""
+        """One line naming the rule currently blocking confirmation.
+
+        The *first* failing rule is reported, so the operator sees one
+        actionable reason rather than a list:
+
+        >>> held = RuleResult("dwell", True, "tracked=3.0s (>= 2.0s)", 1.0)
+        >>> weak = RuleResult("confidence", False, "confidence=0.41 (>= 0.60)", 0.68)
+        >>> ConfirmationOutcome(False, (held, weak), 0.68).summary
+        'confidence=0.41 (>= 0.60)'
+        >>> ConfirmationOutcome(True, (held,), 1.0).summary
+        'all demo criteria satisfied'
+        """
         if self.confirmed:
             return "all demo criteria satisfied"
         blocking = [r for r in self.results if not r.passed]
@@ -135,6 +146,27 @@ class RuleEngine:
     Confirmation requires *every* rule to pass. Reported progress is the
     minimum across rules, so the UI progress ring reflects the criterion that
     is actually holding things up.
+
+    A track that satisfies two criteria out of three is not confirmed, and
+    the reported progress is the laggard's, not the average:
+
+    >>> from backend.vision.tracker import Track
+    >>> track = Track(
+    ...     track_id=1, x=0.4, y=0.4, width=0.05, height=0.05,
+    ...     confidence=0.9, object_class="uav", first_seen=0.0, last_seen=1.0,
+    ... )
+    >>> engine = RuleEngine([ClassRule(("uav",)), ConfidenceRule(0.6), DwellRule(2.0)])
+    >>> outcome = engine.evaluate(track, now=1.0)
+    >>> outcome.confirmed, round(outcome.progress, 2)
+    (False, 0.5)
+    >>> outcome.summary
+    'tracked=1.0s (>= 2.0s)'
+
+    One more second of dwell is all that is missing:
+
+    >>> outcome = engine.evaluate(track, now=2.0)
+    >>> outcome.confirmed, outcome.summary
+    (True, 'all demo criteria satisfied')
     """
 
     def __init__(self, rules: list[Rule]) -> None:

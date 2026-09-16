@@ -1,10 +1,17 @@
+# Local convenience, not a gate. CI is the gate, and every CI job invokes a
+# `make` target (see .github/workflows/ci.yml) — these hooks call the same
+# targets so a hook and CI cannot disagree about what a check means.
+#
+# Note the ruff hooks run with --fix while `make lint` runs --check: that is
+# deliberate here (fix on commit, verify in CI), but it does mean a passing
+# commit is not proof CI will pass. Run `make check` before opening a PR.
 repos:
   # Python linting and formatting. notebooks/ is excluded on purpose: marimo
   # owns those files' formatting, and `make lint` covers backend tests scripts.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.7
+    rev: v0.16.7  # keep in step with the ruff pin in pyproject.toml
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
         exclude: ^notebooks/
       - id: ruff-format
@@ -15,31 +22,38 @@ repos:
     hooks:
       - id: eslint
         name: eslint
-        entry: bash -c 'cd frontend && npm run lint'
+        entry: make lint-frontend
         language: system
         files: ^frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: false
 
-      - id: typecheck
-        name: typecheck
-        entry: bash -c 'cd frontend && npm run typecheck'
+      - id: typecheck-frontend
+        name: typecheck-frontend
+        entry: make typecheck-frontend
         language: system
         files: ^frontend/.*\.(ts|tsx)$
         pass_filenames: false
 
-  # Run tests
+      - id: typecheck-backend
+        name: typecheck-backend
+        entry: make typecheck-backend
+        language: system
+        files: ^(backend)/.*\.py$
+        pass_filenames: false
+
+  # Tests
   - repo: local
     hooks:
       - id: test-backend
         name: test-backend
-        entry: bash -c '.venv/bin/pytest -q'
+        entry: make test-backend
         language: system
         files: ^(backend|tests)/.*\.py$
         pass_filenames: false
 
       - id: test-frontend
         name: test-frontend
-        entry: bash -c 'cd frontend && npm run test'
+        entry: make test-frontend
         language: system
         files: ^frontend/.*\.(ts|tsx)$
         pass_filenames: false

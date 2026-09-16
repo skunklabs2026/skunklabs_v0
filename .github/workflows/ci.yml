@@ -1,3 +1,12 @@
+# Every job below invokes a `make` target rather than retyping its body. The
+# Makefile is the single definition of each gate, so `make check` and CI
+# cannot drift apart — which is exactly what had already happened when CI
+# grew a `depcheck` job the `check` target did not know about.
+#
+# Actions are pinned to commit SHAs, not moving major tags: a `v4` tag is
+# re-pointed at the publisher's discretion, and a re-pointed tag runs in CI
+# without any commit here. Dependabot's github-actions ecosystem keeps them
+# current — see .github/dependabot.yml.
 name: CI
 
 on:
@@ -6,78 +15,82 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  # One Node major everywhere. Lint, typecheck and depcheck previously ran on
+  # 20 while the suites ran on 22, so a version-specific failure could pass
+  # CI. 22 is the one that works: jsdom 30 pulls an undici that needs
+  # `webidl.util.markAsUncloneable`, added in Node 20.16/22 — on the runner's
+  # Node 20 every vitest worker fails to start. Node 20 is also deprecated on
+  # GitHub runners.
+  NODE_VERSION: "22"
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Set up Python
-        run: uv python install 3.11
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Node dependencies
-        run: cd frontend && npm ci
-
-      - name: Lint Python (ruff)
+      - name: Install dependencies
         run: |
-          uvx ruff check backend tests scripts
-          uvx ruff format --check backend tests scripts
+          uv sync --extra dev
+          cd frontend && npm ci
 
-      - name: Lint TypeScript (eslint + prettier)
-        run: cd frontend && npm run lint
+      - name: Lint
+        run: make lint
 
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Node dependencies
-        run: cd frontend && npm ci
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+          cd frontend && npm ci
 
-      - name: Typecheck frontend
-        run: cd frontend && npm run typecheck
+      - name: Typecheck
+        run: make typecheck
 
   test-backend:
     name: Backend Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
 
-      - name: Set up Python
-        run: uv python install 3.11
-
-      - name: Create venv and install dependencies
-        run: |
-          uv venv .venv --python 3.11
-          uv pip install -e ".[dev]"
+      # uv reads .python-version; the interpreter is declared once, there.
+      - name: Install dependencies from the lockfile
+        run: uv sync --extra dev
 
       - name: Run tests with coverage
-        run: .venv/bin/pytest --cov=backend --cov-report=term-missing --cov-report=xml
+        run: make test-backend-cov
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
         with:
           files: coverage.xml
           flags: backend
@@ -87,12 +100,12 @@ jobs:
     name: Frontend Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -100,10 +113,10 @@ jobs:
         run: cd frontend && npm ci
 
       - name: Run tests with coverage
-        run: cd frontend && npm run test:cov
+        run: make test-frontend-cov
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
         with:
           files: frontend/coverage/coverage-final.json
           flags: frontend
@@ -113,12 +126,12 @@ jobs:
     name: Dependency Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -126,4 +139,46 @@ jobs:
         run: cd frontend && npm ci
 
       - name: Check for unused dependencies
-        run: cd frontend && npm run depcheck
+        run: make depcheck
+
+  verify:
+    name: Pipeline Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
+
+      - name: Install dependencies from the lockfile
+        run: uv sync --extra dev
+
+      # The only end-to-end check over real footage: it drives the pipeline
+      # headlessly and fails if the full mission sequence is not reached.
+      # Previously it ran only when someone remembered to.
+      - name: Verify the mission sequence
+        run: make verify
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+          cd frontend && npm ci
+
+      - name: Scan
+        run: make security

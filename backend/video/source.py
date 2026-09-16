@@ -117,7 +117,9 @@ class FileVideoSource(VideoSource):
     def read(self) -> np.ndarray | None:
         if self._cap is None and not self.open():
             return None
-        assert self._cap is not None
+        # Type narrowing only: open() returning True guarantees a handle.
+        # Not input validation, so -O stripping it changes nothing.
+        assert self._cap is not None  # nosec B101
 
         # Pace playback to target_fps so a 30 fps clip does not race through
         # the pipeline faster than the operator can watch it.
@@ -208,7 +210,9 @@ class CameraVideoSource(VideoSource):
                 return None
             if not self.open():
                 return None
-        assert self._cap is not None
+        # Type narrowing only: open() returning True guarantees a handle.
+        # Not input validation, so -O stripping it changes nothing.
+        assert self._cap is not None  # nosec B101
 
         ok, frame = self._cap.read()
         if not ok:

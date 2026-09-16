@@ -45,8 +45,9 @@ import argparse
 import ast
 import io
 import os
+import shutil
 import struct
-import subprocess
+import subprocess  # curl only, fixed argv, no shell; see _curl_binary  # nosec B404
 import zlib
 from dataclasses import dataclass
 from functools import cached_property
@@ -178,6 +179,14 @@ class Member:
         return not name.startswith(".") and Path(name).suffix in {".npy", ".png"}
 
 
+def _curl_binary() -> str:
+    """Absolute path to curl, so the call never depends on PATH at run time."""
+    found = shutil.which("curl")
+    if found is None:
+        raise OSError("curl is required to read the remote archives, and is not on PATH")
+    return found
+
+
 class RemoteZip:
     """Random access to a zip over HTTP, without downloading the whole thing.
 
@@ -195,8 +204,9 @@ class RemoteZip:
     # -- transport ---------------------------------------------------------
 
     def _get(self, start: int, end: int) -> bytes:
-        result = subprocess.run(
-            ["curl", "-sfL", "-r", f"{start}-{end}", self.archive.url],
+        # Fixed argv, no shell; the URL comes from the ARCHIVES table.
+        result = subprocess.run(  # nosec B603
+            [_curl_binary(), "-sfL", "-r", f"{start}-{end}", self.archive.url],
             capture_output=True,
             check=False,
         )
@@ -215,8 +225,10 @@ class RemoteZip:
         cache = self.cache_dir / f"{self.archive.name}.size"
         if cache.exists():
             return int(cache.read_text().strip())
-        result = subprocess.run(
-            ["curl", "-sfL", "-D", "-", "-o", os.devnull, "-r", "0-0", self.archive.url],
+        # Fixed argv, no shell; the URL comes from the ARCHIVES table.
+        headers_only = ["-D", "-", "-o", os.devnull, "-r", "0-0"]
+        result = subprocess.run(  # nosec B603
+            [_curl_binary(), "-sfL", *headers_only, self.archive.url],
             capture_output=True,
             text=True,
             check=False,
@@ -433,8 +445,6 @@ def sample_members(
     if sequences is not None and len(chosen_sequences) > sequences:
         picks = rng.choice(len(chosen_sequences), size=sequences, replace=False)
         chosen_sequences = [chosen_sequences[i] for i in sorted(picks)]
-    wanted = set(chosen_sequences)
-
     out: list[Member] = []
     for sequence in chosen_sequences:
         for modality in modalities or MODALITIES:
@@ -453,7 +463,6 @@ def sample_members(
                 # the whole sequence instead of clumping.
                 step = len(pool) / per_modality
                 out.extend(pool[int(i * step)] for i in range(per_modality))
-    assert wanted  # sequences were selected above
     return out
 
 

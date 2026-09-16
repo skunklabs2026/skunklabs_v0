@@ -62,6 +62,38 @@ class SpeedEstimator:
 
         `image_speed` is in normalised frame widths per second; `bbox_width`
         is the normalised apparent width.
+
+        The module docstring's claim — same pixels, ~7x the range, ~7x the
+        speed — is exactly what the assumed size does, and it is worth being
+        able to run:
+
+        >>> from backend.mission.classification import PROFILES
+        >>> from backend.schemas import PlatformClass
+        >>> estimator = SpeedEstimator(camera_hfov_deg=60.0, enabled=True)
+        >>> def assess(platform):
+        ...     e = estimator.estimate(
+        ...         image_speed=0.3,
+        ...         bbox_width=0.02,
+        ...         platform=platform,
+        ...         profile=PROFILES[platform],
+        ...     )
+        ...     return e.range_m, e.speed_ms
+        >>> assess(PlatformClass.MULTIROTOR)
+        (15.2, 4.8)
+        >>> assess(PlatformClass.FIXED_WING)
+        (108.3, 34.0)
+
+        With no field of view configured there is no honest answer, so it
+        declines to invent one:
+
+        >>> blind = SpeedEstimator(camera_hfov_deg=0.0)
+        >>> blind.estimate(
+        ...     image_speed=0.3,
+        ...     bbox_width=0.02,
+        ...     platform=PlatformClass.FIXED_WING,
+        ...     profile=PROFILES[PlatformClass.FIXED_WING],
+        ... ).available
+        False
         """
         base = SpeedEstimate(
             available=False,

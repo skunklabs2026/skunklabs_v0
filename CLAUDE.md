@@ -12,11 +12,12 @@ the working directory and the flags, and they are all safe to re-run.
 | --- | --- |
 | `make help` | list every target (the default goal) |
 | `make setup` | `setup-backend` + `setup-frontend` — the first-run command |
-| `make setup-backend` | create `.venv` (uv, Python 3.11) and `uv pip install -e ".[dev]"` |
+| `make setup-backend` | `uv sync --extra dev` — installs from `uv.lock` |
 | `make setup-frontend` | `npm install` in `frontend/` |
 | `make setup-hooks` | install the pre-commit hooks |
 | `make setup-yolo` | add the optional neural detector (`.[yolo]`, ~2 GB) |
 | `make setup-research` | add the notebook/EDA toolchain (`.[research]`) |
+| `make lock` | re-resolve `uv.lock` after changing a dependency |
 | `make demo` | backend + UI together (`./run_demo.sh`) |
 | `make dev-backend` | uvicorn with autoreload on :8000 |
 | `make dev-frontend` | Vite dev server only |
@@ -28,19 +29,38 @@ the working directory and the flags, and they are all safe to re-run.
 | `make lint` | `ruff check` + `ruff format --check` on `backend tests scripts`, then ESLint |
 | `make format` | auto-fix Python (ruff) and TypeScript formatting |
 | `make fmt-frontend` | frontend formatting only |
-| `make typecheck` | TypeScript type-check (`typecheck-frontend` is an alias) |
+| `make typecheck` | mypy over `backend/` + `tsc` over `frontend/` |
+| `make typecheck-backend` | mypy only |
+| `make typecheck-frontend` | `tsc` only |
+| `make security` | bandit + pip-audit + `npm audit` |
 | `make depcheck` | unused/missing frontend dependencies |
-| `make check` | `lint typecheck test-backend test-frontend` — **run before opening a PR** |
+| `make check` | `lint typecheck test-backend test-frontend depcheck verify security` — **run before opening a PR**, and exactly what CI runs |
 | `make build` | production frontend build, served by the backend at :8000 |
 | `make verify` | drive the pipeline headlessly through the full mission sequence |
-| `make notebook` | marimo notebook browser on `notebooks/` (`make marimo` is an alias) |
+| `make marimo` | marimo editor on `backend/notebooks/` (notebooks that import `backend.*`) |
+| `make marimo-run` | serve one of those read-only as an app (`NB=foo.py`) |
+| `make eda-notebook` | marimo notebook browser on the repo-root `notebooks/` |
 | `make eda` | fetch MMAUD metadata, archive index and all 40k labels (~18 MB) |
 | `make eda-sample` | fetch a small random sample of real frames |
 | `make eda-check` | `marimo check` + run the notebook headlessly as a script |
 | `make clean` | remove caches and build output |
 
-There is no `typecheck` for Python in this repo — `make typecheck` is the
-frontend only. Python quality is `ruff` plus the pytest suite.
+Python quality is `ruff` (lint/format), `mypy` (types, `[tool.mypy]` in
+`pyproject.toml`, scoped to `backend/`), the pytest suite, and `bandit` +
+`pip-audit`. `scripts/` is linted and scanned but not yet type-checked — three
+opencv/numpy stub gaps stand in the way, noted in the mypy config.
+
+**The dependency set is locked.** `uv.lock` is committed and is the only
+pinned path — there is no `requirements.txt`. Change a version in
+`pyproject.toml`, then run `make lock`. `[tool.uv] constraint-dependencies`
+carries floors on *transitive* packages that a direct pin cannot reach; each
+entry names the advisory that forced it, and `make security` is what tells you
+when one is needed or can be dropped.
+
+Every CI job in `.github/workflows/ci.yml` invokes a `make` target rather than
+repeating its commands, and third-party actions are pinned to commit SHAs. If
+you add a gate, add it to **both** the `check` target and a CI job — the
+comment above `check` says so too.
 
 Two generated/derived artefacts have their own scripts, and neither is
 hand-edited:
@@ -121,6 +141,15 @@ to. Do not re-add a `.rhiza/` directory in response to it.
 
 ## Research notebooks
 
+There are two notebook homes, and the split is deliberate. `backend/notebooks/`
+is for notebooks that `import backend.*` — it is inside the installed package,
+so they exercise the same code the pipeline runs; `make marimo` opens it. The
+repo-root `notebooks/` is for offline dataset analysis that imports nothing
+from `backend/`, and it stays outside the package precisely so a notebook is
+never shipped in the wheel or counted against the 90% coverage gate
+(`[tool.coverage.run] source = ["backend"]` would otherwise include it).
+`make eda-notebook` opens that one.
+
 `notebooks/` holds offline dataset analysis. Nothing in `backend/` imports it,
 nothing in it runs during a demo, and it needs `make setup-research` first —
 the core dependency list stays at seven packages so "runs locally and offline"
@@ -129,8 +158,8 @@ keeps meaning what it says.
 **Notebooks are [marimo](https://marimo.io), not Jupyter.** A marimo notebook
 is a plain `.py` file — it diffs, it has no stored outputs to strip, and
 `python notebooks/01_mmaud_eda.py` runs the whole thing headlessly, which is
-what `make eda-check` uses as a smoke test. `make notebook` (or `make marimo`)
-opens marimo's notebook browser rooted at `notebooks/`, so you pick a notebook
+what `make eda-check` uses as a smoke test. `make eda-notebook` opens marimo's
+notebook browser rooted at `notebooks/`, so you pick a notebook
 from the menu rather than landing in one — add a second notebook and it shows
 up there with no Makefile change. Do not hand-edit the `@app.cell` scaffolding.
 
@@ -175,18 +204,39 @@ letting the code contradict the docs.
 
 ## Conventions
 
+- **Frontend tests live beside the code they test**, with shared telemetry
+  fixtures in `frontend/src/test/factories.ts` — build test data from those
+  rather than hand-rolling objects, so a `types.ts` regeneration breaks one
+  file. `src/test/helpers.ts` has `expectRenderErrors()`, which silences
+  jsdom's stack traces for suites that throw during render on purpose; scope
+  it to those suites so an unexpected throw stays loud.
 - **Tests** live in `tests/` (`[tool.pytest.ini_options] testpaths = ["tests"]`,
   `addopts = "-q --strict-markers"`), one `test_*.py` per backend concern:
   `test_api.py`, `test_state_machine.py`, `test_rules.py`, `test_tracker.py`,
   `test_trajectory.py`, `test_classification.py`, `test_video_library.py`.
   Shared fixtures go in `tests/conftest.py`. Frontend component tests live
   beside the components and run under Vitest.
-- **Coverage** is measured over `backend` only, with the threshold in
-  `[tool.coverage.report] fail_under`. Check the current value before claiming
-  a number — the README quotes 90% in several places.
+- **Coverage is 90%, enforced on both sides.** Backend: **branch** coverage
+  over `backend`, `[tool.coverage.report] fail_under = 90` against ~93%
+  actual. Frontend: all four metrics at 90 in `frontend/vite.config.ts`,
+  against ~96-99%. Two exclusions, both because counting them would report a
+  permanently unfixable gap: `YoloDetector` (`# pragma: no cover`, needs the
+  2 GB extra CI does not install) and `frontend/src/main.tsx` (the bootstrap).
+  Raise the thresholds as coverage rises; never lower one to make a red build
+  green — a change that drops coverage owes a test. Check the real value
+  before quoting a number anywhere.
+- **The tests need the demo clips.** `tests/` skips ~18 tests when
+  `assets/videos/demo_{drone,multirotor,fixed_wing}.mp4` are absent — a silent
+  22-point drop in backend coverage. `make test-backend` depends on
+  `demo-video`, which generates them; never call `pytest` directly in CI.
 - **Vision accuracy is deliberately not unit-tested.** Use
   `scripts/verify_pipeline.py` against real footage instead of asserting on
-  detector output.
+  detector output. It runs in CI as the `verify` job (`make verify`), which
+  generates the demo clip first if it is missing.
+- **Docstring examples are executed.** `addopts` carries `--doctest-modules`
+  and `testpaths` includes `backend`, so a `>>>` in a docstring is a test.
+  That is why the safety banners use `=== SAFETY SCOPE ===` rather than
+  `>>> SAFETY SCOPE <<<`, which doctest parses as code and fails on.
 - **Lint/format is ruff only**, `line-length = 96`, `target-version = "py311"`,
   excluding `.venv`, `assets` and `frontend`. The `ignore` list in
   `pyproject.toml` is annotated with the reason for each entry — add a reason

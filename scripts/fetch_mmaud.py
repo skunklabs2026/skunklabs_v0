@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
+import subprocess  # curl only, fixed argv, no shell; see _curl  # nosec B404
 import sys
 from pathlib import Path
 
@@ -63,11 +63,15 @@ DRIVE_FILE = (
 
 def _curl(url: str, target: Path, *, resume: bool = False) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
-    command = ["curl", "-fL", "--progress-bar", "-o", str(target), url]
+    found = shutil.which("curl")
+    if found is None:
+        raise OSError("curl is required to download MMAUD, and is not on PATH")
+    command = [found, "-fL", "--progress-bar", "-o", str(target), url]
     if resume:
         command.insert(1, "-C")
         command.insert(2, "-")
-    subprocess.run(command, check=True)
+    # Fixed argv, no shell; the URL comes from the DRIVE_FILE template.
+    subprocess.run(command, check=True)  # nosec B603
 
 
 def describe(root: Path) -> None:

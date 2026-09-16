@@ -21,10 +21,10 @@ log()  { printf '\033[38;5;173m[skunklabs]\033[0m %s\n' "$*"; }
 fail() { printf '\033[38;5;167m[skunklabs]\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------- preflight
-[ -x "$PYTHON" ] || fail "No virtualenv at .venv — run:  python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+[ -x "$PYTHON" ] || fail "No virtualenv at .venv — run:  make setup"
 
 "$PYTHON" -c "import fastapi, cv2" 2>/dev/null \
-  || fail "Backend dependencies missing — run:  .venv/bin/pip install -r requirements.txt"
+  || fail "Backend dependencies missing — run:  make setup-backend"
 
 [ -d "$REPO_ROOT/frontend/node_modules" ] \
   || fail "Frontend dependencies missing — run:  cd frontend && npm install"

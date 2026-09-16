@@ -33,6 +33,8 @@ tsconfig.tsbuildinfo
 
 # Coverage
 .coverage
+.coverage.*
+".coverage 2"
 coverage.xml
 htmlcov/
 frontend/coverage/
