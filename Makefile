@@ -9,8 +9,10 @@ VENV     := .venv
 FRONTEND := frontend
 
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo demo dev-backend dev-frontend \
-        test test-cov lint format fmt-frontend typecheck typecheck-frontend depcheck check build clean
+.PHONY: help setup setup-backend setup-frontend setup-hooks setup-yolo setup-research \
+        demo dev-backend dev-frontend notebook marimo eda eda-sample eda-check \
+        test test-backend test-frontend test-cov test-frontend-watch \
+        lint format fmt-frontend typecheck typecheck-frontend depcheck check build verify clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -34,6 +36,9 @@ setup-hooks: ## Install pre-commit hooks (runs checks on every commit)
 setup-yolo: ## Add the optional neural detector (~2 GB download)
 	uv pip install -e ".[yolo]"
 
+setup-research: ## Add the notebook/EDA toolchain (marimo, pandas, matplotlib)
+	uv pip install -e ".[research]"
+
 # ---------------------------------------------------------------- running
 
 demo: ## Start backend + UI together and open the console
@@ -44,6 +49,29 @@ dev-backend: ## Backend only, with autoreload
 
 dev-frontend: ## Frontend dev server only
 	cd $(FRONTEND) && npm run dev
+
+# ---------------------------------------------------------------- research
+#
+# Offline dataset analysis. Nothing here is part of the demo, and nothing in
+# backend/ imports it. Needs `make setup-research` first.
+
+notebook: ## Open the marimo notebook browser on notebooks/
+	$(VENV)/bin/marimo edit notebooks/
+
+marimo: notebook ## Open the marimo notebook browser (alias)
+
+eda: ## Fetch everything the notebook needs cheaply (~18 MB, no bulk download)
+	$(VENV)/bin/python scripts/fetch_mmaud.py --download meta
+	$(VENV)/bin/python scripts/fetch_mmaud.py --index val
+	$(VENV)/bin/python scripts/fetch_mmaud.py --labels train
+
+eda-sample: ## Pull a small random sample of real frames for the plotting cells
+	$(VENV)/bin/python scripts/fetch_mmaud.py --sample val
+
+eda-check: ## Run the EDA notebook headlessly as a script, plus marimo's own checks
+	$(VENV)/bin/marimo check notebooks/01_mmaud_eda.py
+	$(VENV)/bin/python notebooks/01_mmaud_eda.py
+	@echo "EDA notebook executed cleanly"
 
 # ---------------------------------------------------------------- quality
 
@@ -99,4 +127,4 @@ verify: ## Drive the pipeline headlessly through the full mission sequence
 
 clean: ## Remove caches and build output
 	find . -path ./$(VENV) -prune -o -name __pycache__ -type d -print0 | xargs -0 rm -rf
-	rm -rf .pytest_cache .ruff_cache $(FRONTEND)/dist
+	rm -rf .pytest_cache .ruff_cache coverage.xml htmlcov $(FRONTEND)/dist $(FRONTEND)/coverage

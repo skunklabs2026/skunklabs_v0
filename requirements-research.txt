@@ -1,0 +1,8 @@
+# Offline dataset analysis (notebooks/). Only needed to run the EDA notebook;
+# the demo itself never imports any of this.
+-r requirements.txt
+marimo==0.23.6
+pandas==2.2.3
+matplotlib==3.10.0
+scipy==1.15.1
+gdown==5.2.0

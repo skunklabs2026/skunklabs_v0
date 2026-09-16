@@ -19,6 +19,12 @@ build/
 assets/videos/*.mp4
 assets/videos/uploads/
 
+# Datasets — downloaded or generated locally, never committed.
+assets/datasets/
+
+# Notebooks (marimo caches and layout files)
+__marimo__/
+
 # Frontend
 node_modules/
 dist/
@@ -27,7 +33,9 @@ tsconfig.tsbuildinfo
 
 # Coverage
 .coverage
+coverage.xml
 htmlcov/
+frontend/coverage/
 
 # OS
 .DS_Store

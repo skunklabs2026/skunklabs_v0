@@ -29,8 +29,17 @@ dev = [
     "pytest==8.3.4",
     "pytest-cov==6.0.0",
     "httpx==0.28.1",
-    "ruff==0.9.2",
+    "ruff==0.16.7",
     "pre-commit==4.0.1",
+]
+# Offline dataset analysis (notebooks/). Not needed to run the demo — the core
+# dependency list above stays at seven packages on purpose.
+research = [
+    "marimo==0.23.6",
+    "pandas==2.2.3",
+    "matplotlib==3.10.0",
+    "scipy==1.15.1",
+    "gdown==5.2.0",
 ]
 
 [project.scripts]
